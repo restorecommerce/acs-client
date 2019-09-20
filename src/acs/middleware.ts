@@ -3,7 +3,7 @@ import { initAuthZ, authZ } from './authz';
 /**
  * Koa middleware using the BMSLSA implementation for `iam-authn`.
  */
-export default function acsClientMiddleware() {
+export function acsClientMiddleware() {
   initAuthZ();
 
   return async (ctx: any, next) => {
