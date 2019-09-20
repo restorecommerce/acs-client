@@ -38,16 +38,13 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
     return cb ? cb() : null;
   } else if (action != 'login' && ctx && ctx.session == null) {
     // user registry
-    // if (!ctx['authN']) { // user registry
-    //   if (action != 'create' || isResource(input) && input.type != 'user.User') {
-    //     // output.error.code.push(errors.USER_NOT_LOGGED_IN.code);
-    //     // output.error.message.push(errors.USER_NOT_LOGGED_IN.message);
-    //     output.details[0].status.message = errors.USER_NOT_LOGGED_IN.message;
-    //     output.details[0].status.code = errors.USER_NOT_LOGGED_IN.code;
-    //     console.log('Output is....', JSON.stringify(output));
-    //     return output;
-    //   }
-    // }
+    if (!ctx['authN']) { // user registry
+      if (action != 'create' || isResource(input) && input.type != 'user.User') {
+        output.details[0].status.message = errors.USER_NOT_LOGGED_IN.message;
+        output.details[0].status.code = errors.USER_NOT_LOGGED_IN.code;
+        return output;
+      }
+    }
   }
   else if ((action == 'search' && isReadRequest(input)) || (action == 'GET' && isReadRequest(input))) {
     const resourceName = input.entity;
