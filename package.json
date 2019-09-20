@@ -16,7 +16,7 @@
     "service",
     "client"
   ],
-  "main": "index.js",
+  "main": "./lib/index.js",
   "dependencies": {
     "@restorecommerce/grpc-client": "git+https://github.com/restorecommerce/grpc-client.git",
     "@restorecommerce/logger": "^0.1.10",
