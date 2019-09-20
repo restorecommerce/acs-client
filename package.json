@@ -40,6 +40,7 @@
     "lint": "tslint -p tsconfig.json",
     "build:tsc": "tsc -d",
     "build:clean": "rimraf lib",
-    "build": "npm-run-all lint build:clean build:tsc"
+    "build": "npm-run-all lint build:clean build:tsc",
+    "postinstall": "tsc -d"
   }
 }
