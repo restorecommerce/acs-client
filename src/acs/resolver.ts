@@ -19,7 +19,7 @@ import { UnAuthZ } from './authz';
  * If cb is set to null and action is 'read', a generic `service.read(input)` is performed.
  * Cb can be useful in business-specific operations or when in need of some field-specific handling.
  */
-export default async function accessRequest(action: AuthZAction, input: Resource[] | Resource | LoginInput | ReadRequest,
+export async function accessRequest(action: AuthZAction, input: Resource[] | Resource | LoginInput | ReadRequest,
   ctx: any, cb?: Function): Promise<any | LoginResult | UserSessionData | PolicySetRQ> {
   let output = {
     details: [
