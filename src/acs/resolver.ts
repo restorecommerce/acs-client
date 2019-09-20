@@ -34,6 +34,12 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
   };
   // authentication
   // if no token exists in 'ctx' and user is not attempting to sign in
+  if (!cfg.get('authorization:enabled')) {
+    if (cb) {
+      output = await cb(input);
+    }
+    return output;
+  }
   if (action === 'session') {
     return cb ? cb() : null;
   } else if (action != 'login' && ctx && ctx.session == null) {
@@ -250,7 +256,10 @@ async function whatIsAllowed(ctx: ACSContext, action: AuthZAction[],
 
 export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
   entity: string, ctx: ACSContext, fields?: string[]): Resource[] {
-  const userData: any = (ctx.session.data) || {};
+  let userData = {};
+  if (ctx.session && ctx.session.data) {
+    userData = (ctx.session.data);
+  }
   return resourceList.map((resource): Resource => {
     let instance = convertToObject(resource);
     if (action == 'create') {
