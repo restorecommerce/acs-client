@@ -180,6 +180,7 @@ export interface AccessControlObjectInterface {
   description?: string;
   target?: AttributeTarget;
   effect?: Effect;
+  condition?: string;
 }
 
 // Reverse query response

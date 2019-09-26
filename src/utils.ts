@@ -2,6 +2,8 @@ import { RoleAssociation, UserScope, BMSLSAUser, UserSessionData, PolicySetRQ, E
 import * as _ from 'lodash';
 import { QueryArguments, UserQueryArguments } from './acs/resolver';
 import { errors, cfg } from './config';
+import * as nodeEval from 'node-eval';
+import logger from './logger';
 
 export async function reduceRoleAssociations(roleAssociations: RoleAssociation[],
   scopeID: string): Promise<UserScope> {
@@ -67,7 +69,8 @@ export function handleError(err: string | Error | any): any {
 }
 
 export async function buildFilterPermissions(policySet: PolicySetRQ,
-  user: UserSessionData): Promise<QueryArguments | UserQueryArguments> {
+  ctx: any): Promise<QueryArguments | UserQueryArguments> {
+  const user = ctx.session.data as UserSessionData;
   const scope = user.scope ? user.scope.scopeOrganization : user.default_scope;
   const userScopes: string[] = [scope];
 
@@ -102,7 +105,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
 
         for (let rule of policy.rules) {
           if (rule.effect == effect) {
-            policyFilters.push(buildQueryFromTarget(rule.target, effect, userScopes, urns));
+            policyFilters.push(buildQueryFromTarget(rule.target, effect, userScopes, urns, rule.condition, ctx));
           }
         }
         policyEffects.push(effect);
@@ -170,12 +173,30 @@ interface QueryParams {
 }
 
 function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
-  userTotalScope: string[], urns: any): QueryParams {
+  userTotalScope: string[], urns: any, condition?: string, context?: any): QueryParams {
   const { subject, resources } = target;
 
   const filter = [];
   const query = {};
+  let filterId;
 
+  // if there is a condition add this to filter
+  if (condition && !_.isEmpty(condition)) {
+    condition = condition.replace(/\\n/g, '\n');
+    const request = { target, context };
+    try {
+      filterId = validateCondition(condition, request);
+      if (filterId) {
+        filter.push({
+          id: {
+            $eq: filterId
+          }
+        });
+      }
+    } catch (err) {
+      logger.info('Error caught evaluating condition:', { condition, err });
+    }
+  }
   const scopingAttribute = _.find(subject, (attribute: Attribute) =>
     attribute.id == urns.roleScopingEntity);
   if (!!scopingAttribute && effect == Effect.PERMIT) { // note: there is currently no query to exclude scopes
@@ -223,6 +244,9 @@ function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
   query['filter'] = {
     [key]: filter
   };
-
   return query;
+}
+
+function validateCondition(condition: string, request: any): boolean {
+  return nodeEval(condition, 'condition.js', request);
 }

@@ -62,7 +62,6 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
         return output;
       }
     } catch (err) {
-      console.log(err);
       logger.error('Error calling whatIsAllowed:', { message: err.message });
       return {
         error: {
@@ -83,7 +82,6 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
       // Note: it is assumed that there is only one policy set
       policySet = await whatIsAllowed(ctx as ACSContext, [action], [{ type: resourceName }]);
     } catch (err) {
-      console.log(err);
       logger.error('Error calling whatIsAllowed:', { message: err.message });
       return {
         error: {
@@ -93,7 +91,7 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
       };
     }
 
-    const permissionArguments = await buildFilterPermissions(policySet, ctx.session.data as UserSessionData);
+    const permissionArguments = await buildFilterPermissions(policySet, ctx);
     if (!permissionArguments) {
       return {
         details: [] // no resource retrieved
@@ -102,7 +100,16 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
 
     const finalFilter = { $and: [] };
     if (!_.isEmpty(input.args.filter)) {
-      finalFilter.$and.push(_.cloneDeep(input.args.filter));
+      let filterArgs = _.cloneDeep(input.args.filter);
+      if (!_.isArray(filterArgs)) {
+        filterArgs = [filterArgs];
+      }
+      let payload = {};
+      filterArgs && filterArgs.length && filterArgs.forEach(element => {
+        const { value, field, operation } = element;
+        payload[field] = { ...payload[field], [`$${operation}`]: value };
+      });
+      finalFilter.$and.push(payload);
     }
     if (!_.isEmpty(permissionArguments.filter)) {
       finalFilter.$and.push(permissionArguments.filter);
@@ -121,7 +128,6 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
       output = await cb(permissionArguments);
     } catch (err) {
       logger.error('Error while running query', { err });
-      console.log(err);
       output.details[0].status.message = errors.SYSTEM_ERROR.message;
       output.details[0].status.code = errors.SYSTEM_ERROR.code;
     }
@@ -147,7 +153,6 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
     try {
       response = await whatIsAllowed(ctx as ACSContext, actionList, resources);
     } catch (err) {
-      console.log(err);
       logger.error('Error calling whatIsAllowed :', { message: err.message });
       response.error = {};
       response.error.message = [err.message];
@@ -168,11 +173,9 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
         // output.details = null;
         output.details[0].status.message = msg;
         output.details[0].status.code = errors.ACTION_NOT_ALLOWED.code;
-        console.log('Resolver not executed..returning resp...', JSON.stringify(output));
         return output;
       }
     } catch (err) {
-      console.log(err);
       logger.verbose('Error while calling ACS', { err });
       return {
         error: {
