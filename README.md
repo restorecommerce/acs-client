@@ -18,6 +18,7 @@ ex: orgScope: 'urn:restorecommerce:acs:model:organization.Organization'
 The client exposes `accessRequest` API which constructs the request object and then invoke either `isAllowed` or `whatISAllowed` operation depending on the `action` and returns the response back to calling microservice.
 
 `RequestType`
+
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | input | `Resource` or `ReadRequest` | required | target resource or read request|
@@ -26,6 +27,7 @@ The client exposes `accessRequest` API which constructs the request object and t
 | cb | `Function` | optional | call back function to be called on `PERMIT` of access request |
 
 `Resource`
+
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | string | requried | resource entity name |
@@ -33,12 +35,14 @@ The client exposes `accessRequest` API which constructs the request object and t
 | instance | string | optional | instance identifier of the resource |
 
 `ReadRequest`
+
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | entity | string | requried | resource entity name to be read |
 | args | [io.restorecommerce.resourcebase.ReadRequest](https://github.com/restorecommerce/resource-base-interface#read) | optional | query arguments |
 
 `ResponseType`
+
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | output | `Output` or [io.restorecommerce.policy_set.PolicySetRQ](https://github.com/restorecommerce/access-control-srv#whatisallowed) | required | response |
