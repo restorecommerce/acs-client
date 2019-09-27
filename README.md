@@ -1,5 +1,12 @@
 # acs-client
 
+<img src="http://img.shields.io/npm/v/%40restorecommerce%2Facs%2Dclient.svg?style=flat-square" alt="">[![Build Status][build]](https://travis-ci.org/restorecommerce/acs-client?branch=master)[![Dependencies][depend]](https://david-dm.org/restorecommerce/acs-client)[![Coverage Status][cover]](https://coveralls.io/github/restorecommerce/acs-client?branch=master)
+
+[version]: http://img.shields.io/npm/v/acs-client.svg?style=flat-square
+[build]: http://img.shields.io/travis/restorecommerce/acs-client/master.svg?style=flat-square
+[depend]: https://img.shields.io/david/restorecommerce/acs-client.svg?style=flat-square
+[cover]: http://img.shields.io/coveralls/restorecommerce/acs-client/master.svg?style=flat-square
+
 * A generic client for [access-control-srv](https://github.com/restorecommerce/access-control-srv)
 * It uses [grpc-client](https://github.com/restorecommerce/grpc-client) to access the API's exposed from `access-control-srv` via gRPC interface
 * This client constructs the request object expected by `access-control-srv` when client reqeusts for access to particular resource and for specific action on resource
@@ -23,7 +30,7 @@ The client exposes `accessRequest` API which constructs the request object and t
 | ----- | ---- | ----- | ----------- |
 | input | `Resource [ ]` or `ReadRequest` | required | list of target resources or read request|
 | action | string | required | action to be performed on the resource (`create`, `read`, `modify` or `delete`) |
-| ctx | `Context` | required | context containing [user](https://github.com/restorecommerce/identity-srv#user) details (id and role-associations) |
+| ctx | `Context` | required | context containing [user](https://github.com/restorecommerce/acs-client#user) details (id and role-associations) |
 | cb | `Function` | optional | call back function to be called on `PERMIT` of access request |
 
 `Resource`
