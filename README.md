@@ -21,7 +21,7 @@ The client exposes `accessRequest` API which constructs the request object and t
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| input | `Resource` or `ReadRequest` | required | target resource or read request|
+| input | `Resource [ ]` or `ReadRequest` | required | list of target resources or read request|
 | action | string | required | action to be performed on the resource (`create`, `read`, `modify` or `delete`) |
 | ctx | `Context` | required | context containing [user](https://github.com/restorecommerce/identity-srv#user) details (id and role-associations) |
 | cb | `Function` | optional | call back function to be called on `PERMIT` of access request |
@@ -31,7 +31,7 @@ The client exposes `accessRequest` API which constructs the request object and t
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | string | requried | resource entity name |
-| fields | string[] | optional | list of fields for accessing or modifying resource |
+| fields | string [ ] | optional | list of fields for accessing or modifying resource |
 | instance | string | optional | instance identifier of the resource |
 
 `ReadRequest`
