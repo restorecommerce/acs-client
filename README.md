@@ -9,11 +9,11 @@
 
 * A generic client for [access-control-srv](https://github.com/restorecommerce/access-control-srv)
 * It uses [grpc-client](https://github.com/restorecommerce/grpc-client) to access the API's exposed from `access-control-srv` via gRPC interface
-* This client constructs the request object expected by `access-control-srv` when client reqeusts for access to particular resource and for specific action on resource
+* This client constructs the [request](https://github.com/restorecommerce/acs-client/#api-client-interface) object expected by `access-control-srv` when requesting for access to particular [resource](https://github.com/restorecommerce/acs-client/#api-client-interface) and for specific action on it
 * This client supports access request for both cases [isAllowed](https://github.com/restorecommerce/access-control-srv#isallowed) and [whatIsAllowed](https://github.com/restorecommerce/access-control-srv#whatisallowed) exposed by `access-control-srv`
 * Evaluation of [condition](https://github.com/restorecommerce/access-control-srv#rule) for `whatIsAllowed` request
 
-## Configuration:
+## Configuration
 The `access-control-srv` [URN configurations](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#urn-reference) needs to be set using [authorization](cfg/config.json) configuration to `acs-client` from access requesting microservice.
 The URN for [role scoping entity](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#role-scoping) for Organization / business units should be set using configuration `authorization.urns.orgScope`.
 
@@ -21,7 +21,7 @@ orgScope: 'urn:<organization>:acs:model:<Entity_Name>'
 
 ex: orgScope: 'urn:restorecommerce:acs:model:organization.Organization'
 
-## API Client Interface:
+## API Client Interface
 The client exposes `accessRequest` API which constructs the request object and then invoke either `isAllowed` or `whatISAllowed` operation depending on the `action` and returns the response back to calling microservice.
 
 `RequestType`
@@ -55,6 +55,6 @@ The client exposes `accessRequest` API which constructs the request object and t
 | output | `Output` or [io.restorecommerce.policy_set.PolicySetRQ](https://github.com/restorecommerce/access-control-srv#whatisallowed) | required | response |
 
 
-Tests:
+## Tests
 
 // TODO
