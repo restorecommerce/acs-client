@@ -3,12 +3,12 @@
   "version": "0.0.1",
   "description": "Access Control Service Client",
   "private": true,
-  "author": "IBS AG",
+  "author": "Invend GmbH",
   "repository": {
     "type": "git",
     "url": ""
   },
-  "license": "commercial",
+  "license": "MIT",
   "keywords": [
     "ACS",
     "access",
