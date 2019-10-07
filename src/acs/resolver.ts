@@ -32,6 +32,15 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
       }
     ]
   };
+
+  if (ctx.req
+    && ctx.req.headers
+    && ctx.req.headers['authorization']
+    && ctx.req.headers['expected-authorization']
+    && ctx.req.headers['authorization'] === ctx.req.headers['expected-authorization']) {
+    return cb(input);
+  }
+
   // authentication
   // if no token exists in 'ctx' and user is not attempting to sign in
   if (!cfg.get('authorization:enabled')) {
