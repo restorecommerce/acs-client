@@ -99,14 +99,14 @@ export class ACSAuthZ implements IAuthZ {
    * @param action
    * @param resource
    */
-  async isAllowed(request: Request<AuthZTarget, AuthZContext>): Promise<Response> {
+  async isAllowed(request: Request<AuthZTarget, AuthZContext>, hierarchicalScope?: any): Promise<Response> {
     const authZRequest = this.prepareRequest(request);
     authZRequest.context = {
       subject: {},
       resources: [],
       security: this.encode(request.context.security)
     };
-    // let resources = authZRequest.target.resources;
+    let resources = request.target.resources;
 
     const subject = request.target.subject;
     if (subject && subject.unauthenticated) {
@@ -117,12 +117,25 @@ export class ACSAuthZ implements IAuthZ {
     // TODO disabling the heirarchical scop check as this would need graph-srv
     // exposed from resource-srv
     if (request.target.action != 'execute') {
-      const hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
+      if (!hierarchicalScope) {
+        hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
+      }
       authZRequest.context.subject = this.encode(_.merge(subject, {
         hierarchical_scope: hierarchicalScope
       }));
-      let idResource = [{ id: subject.id }];
-      authZRequest.context.resources = this.encode(idResource);
+      // let idResource = [{ id: subject.id }];
+      if (request.target.action == 'create') {
+        // insert temporary IDs into resources which are yet to be created
+        let counter = 0;
+        resources = _.cloneDeep(request.target.resources).map((resource) => {
+          if (!resource.instance.id) {
+            resource.instance.id = String(counter++);
+            resource.fields.push('id');
+          }
+          return resource;
+        });
+      }
+      authZRequest.context.resources = this.encode(resources);
     }
 
     const response = await this.acs.isAllowed(authZRequest);
@@ -231,6 +244,7 @@ export class ACSAuthZ implements IAuthZ {
         resources = _.cloneDeep(request.target.resources).map((resource) => {
           if (!resource.instance.id) {
             resource.instance.id = String(counter++);
+            resource.fields.push('id');
           }
           return resource;
         });

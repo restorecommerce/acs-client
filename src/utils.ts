@@ -69,14 +69,19 @@ export function handleError(err: string | Error | any): any {
 }
 
 export async function buildFilterPermissions(policySet: PolicySetRQ,
-  ctx: any): Promise<QueryArguments | UserQueryArguments> {
+  ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> {
   const user = ctx.session.data as UserSessionData;
   const scope = user.scope ? user.scope.scopeOrganization : user.default_scope;
-  const userScopes: string[] = [scope];
+  let userScopes: string[] = [];
+  if (ctx.session.data && ctx.session.data.userScopes && ctx.session.data.userScopes.length > 0) {
+    userScopes = ctx.session.data.userScopes;
+  } else {
+    userScopes = [scope];
+  }
 
   const urns = cfg.get('authorization:urns');
   const query = {
-    filter: {}
+    filter: []
   };
 
   const pSetAlgorithm = policySet.combining_algorithm;
@@ -105,7 +110,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
 
         for (let rule of policy.rules) {
           if (rule.effect == effect) {
-            policyFilters.push(buildQueryFromTarget(rule.target, effect, userScopes, urns, rule.condition, ctx));
+            policyFilters.push(buildQueryFromTarget(rule.target, effect, userScopes, urns, rule.condition, ctx, database));
           }
         }
         policyEffects.push(effect);
@@ -128,6 +133,16 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
 
   const key = applicable == Effect.PERMIT ? '$or' : '$and';
   for (let policy of policyFilters) {
+    if (policy.filter && database && database === 'postgres' && applicable == Effect.PERMIT) {
+      // add a filter for org key based on user scope
+      let keys = Object.keys(policy.filter);
+      query['filter'] = [];
+      for (let key of keys) {
+        query['filter'].push(policy.filter[key]);
+      }
+      continue;
+    }
+
     if (policy.filter) {
       if (!query.filter[key]) {
         query.filter[key] = [];
@@ -173,7 +188,7 @@ interface QueryParams {
 }
 
 function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
-  userTotalScope: string[], urns: any, condition?: string, context?: any): QueryParams {
+  userTotalScope: string[], urns: any, condition?: string, context?: any, database?: string): QueryParams {
   const { subject, resources } = target;
 
   const filter = [];
@@ -199,7 +214,7 @@ function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
   }
   const scopingAttribute = _.find(subject, (attribute: Attribute) =>
     attribute.id == urns.roleScopingEntity);
-  if (!!scopingAttribute && effect == Effect.PERMIT) { // note: there is currently no query to exclude scopes
+  if (!!scopingAttribute && effect == Effect.PERMIT && !database) { // note: there is currently no query to exclude scopes
     query['scope'] = {
       custom_query: 'filterByOwnership',
       custom_arguments: {
@@ -208,7 +223,13 @@ function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
         instance: userTotalScope
       }
     };
+  } else if (!!scopingAttribute && effect == Effect.PERMIT && database && database === 'postgres') {
+    query['filter'] = [];
+    for (let eachScope of userTotalScope) {
+      query['filter'].push({ field: 'orgKey', operation: 'eq', value: eachScope });
+    }
   }
+  console.log('QRF is.....1......', JSON.stringify(query['filter']));
 
   for (let attribute of resources) {
     if (attribute.id == urns.resourceID) {
@@ -241,9 +262,13 @@ function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
   }
 
   const key = effect == Effect.PERMIT ? '$or' : '$and';
-  query['filter'] = {
-    [key]: filter
-  };
+  if (query['filter']) {
+    query['filter'] = Object.assign({}, query['filter'], { [key]: filter });
+  } else {
+    query['filter'] = {
+      [key]: filter
+    };
+  }
   return query;
 }
 

@@ -54,7 +54,8 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
   } else if (action != 'login' && ctx && ctx.session == null) {
     // user registry
     if (!ctx['authN']) { // user registry
-      if (action != 'create' || isResource(input) && input.type != 'user.User') {
+      if (action != 'create' || isResource(input) && input.type != 'user.User'
+        || isResourceList(input) && input[0].type != 'user.User') {
         output.details[0].status.message = errors.USER_NOT_LOGGED_IN.message;
         output.details[0].status.code = errors.USER_NOT_LOGGED_IN.code;
         return output;
@@ -100,11 +101,22 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
       };
     }
 
-    const permissionArguments = await buildFilterPermissions(policySet, ctx);
+    const permissionArguments = await buildFilterPermissions(policySet, ctx, input.database);
     if (!permissionArguments) {
       return {
         details: [] // no resource retrieved
       };
+    }
+
+    if (input.database && input.database === 'postgres') {
+      try {
+        output = await cb(permissionArguments);
+      } catch (err) {
+        logger.error('Error while running query', { err });
+        output.details[0].status.message = errors.SYSTEM_ERROR.message;
+        output.details[0].status.code = errors.SYSTEM_ERROR.code;
+      }
+      return output;
     }
 
     const finalFilter = { $and: [] };
@@ -173,7 +185,7 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
   if (!_.isEmpty(resources) || action == 'execute' || action == 'delete') {
     try {
       // authorization
-      let allowed = await isAllowed(ctx as ACSContext, action, resources);
+      let allowed = await isAllowed(ctx as any, action, resources);
 
       if (allowed && allowed.decision != Decision.PERMIT) {
         const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was ${allowed.decision}`;
@@ -204,7 +216,7 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
   return output;
 }
 
-export async function isAllowed(ctx: ACSContext, action: AuthZAction,
+export async function isAllowed(ctx: any, action: AuthZAction,
   resources: Resource[]) {
   if (contextIsUnauthenticated(ctx)) {
     const grpcConfig = cfg.get('client:acs-srv');
@@ -233,7 +245,7 @@ export async function isAllowed(ctx: ACSContext, action: AuthZAction,
         resources,
         subject: user
       }
-    });
+    }, user.hierarchical_scope);
   }
 }
 
@@ -301,6 +313,28 @@ function createMetadata(resource: any, userData: any): any {
       break;
     }
   }
+
+  if (resource.orgKey) {
+    ownerAttributes.push(
+      {
+        id: urns.ownerIndicatoryEntity,
+        value: urns.organization
+      },
+      {
+        id: urns.ownerInstance,
+        value: resource.orgKey
+      });
+  }
+  // ownerAttributes.push(
+  //   {
+  //     id: urns.ownerIndicatoryEntity,
+  //     value: urns.organization
+  //   },
+  //   {
+  //     id: urns.ownerInstance,
+  //     value: 'KITA-1'
+  //   });
+
   if (!ownUser && !!userData.id) {
     ownerAttributes.push(
       {
@@ -380,6 +414,7 @@ export interface LoginError {
 export interface ReadRequest {
   entity: string;
   args: QueryArguments;
+  database?: string;
 }
 
 export interface QueryArguments {
