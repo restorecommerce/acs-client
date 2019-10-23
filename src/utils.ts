@@ -80,7 +80,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
   }
 
   const urns = cfg.get('authorization:urns');
-  const query = {
+  let query = {
     filter: []
   };
 
@@ -144,6 +144,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
     }
 
     if (policy.filter) {
+      (query as any) = { filter: {}};
       if (!query.filter[key]) {
         query.filter[key] = [];
       }
@@ -229,7 +230,6 @@ function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
       query['filter'].push({ field: 'orgKey', operation: 'eq', value: eachScope });
     }
   }
-  console.log('QRF is.....1......', JSON.stringify(query['filter']));
 
   for (let attribute of resources) {
     if (attribute.id == urns.resourceID) {

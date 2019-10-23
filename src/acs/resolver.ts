@@ -286,7 +286,7 @@ export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
   }
   return resourceList.map((resource): Resource => {
     let instance = convertToObject(resource);
-    if (action == 'create') {
+    if (action == 'create' || action == 'delete') {
       instance = createMetadata(instance, userData);
     } else if (action == 'modify') {
       instance = updateMetadata(instance, userData);
