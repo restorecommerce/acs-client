@@ -133,7 +133,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
 
   const key = applicable == Effect.PERMIT ? '$or' : '$and';
   for (let policy of policyFilters) {
-    if (policy.filter && database && database === 'postgres' && applicable == Effect.PERMIT) {
+    if (policy.filter && database && database === 'postgres') {
       // add a filter for org key based on user scope
       let keys = Object.keys(policy.filter);
       query['filter'] = [];
@@ -224,7 +224,7 @@ function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
         instance: userTotalScope
       }
     };
-  } else if (!!scopingAttribute && effect == Effect.PERMIT && database && database === 'postgres') {
+  } else if (database && database === 'postgres') {
     query['filter'] = [];
     for (let eachScope of userTotalScope) {
       query['filter'].push({ field: 'orgKey', operation: 'eq', value: eachScope });
