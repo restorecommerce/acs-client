@@ -101,6 +101,15 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
       };
     }
 
+    // handle case if policySet is empty
+    if (_.isEmpty(policySet)) {
+      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was INDETERMINATE`;
+      logger.verbose(msg);
+      output.details[0].status.message = msg;
+      output.details[0].status.code = errors.ACTION_NOT_ALLOWED.code;
+      return output;
+    }
+
     const permissionArguments = await buildFilterPermissions(policySet, ctx, input.database);
     if (!permissionArguments) {
       return {
