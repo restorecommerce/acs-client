@@ -295,10 +295,8 @@ export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
   }
   return resourceList.map((resource): Resource => {
     let instance = convertToObject(resource);
-    if (action == 'create' || action == 'delete') {
+    if (action == 'create' || action == 'delete' || action == 'modify') {
       instance = createMetadata(instance, userData);
-    } else if (action == 'modify') {
-      instance = updateMetadata(instance, userData);
     }
     return {
       fields: fields || _.keys(instance),
@@ -334,15 +332,6 @@ function createMetadata(resource: any, userData: any): any {
         value: resource.orgKey
       });
   }
-  // ownerAttributes.push(
-  //   {
-  //     id: urns.ownerIndicatoryEntity,
-  //     value: urns.organization
-  //   },
-  //   {
-  //     id: urns.ownerInstance,
-  //     value: 'KITA-1'
-  //   });
 
   if (!ownUser && !!userData.id) {
     ownerAttributes.push(
@@ -363,13 +352,6 @@ function createMetadata(resource: any, userData: any): any {
   }
   resource.meta.modified_by = userData.id;
   resource.meta.owner = ownerAttributes;
-  return resource;
-}
-
-function updateMetadata(resource: any, userData: any) {
-  resource.meta = {
-    modified_by: userData.id
-  };
   return resource;
 }
 

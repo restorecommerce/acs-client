@@ -124,7 +124,8 @@ export class ACSAuthZ implements IAuthZ {
         hierarchical_scope: hierarchicalScope
       }));
       // let idResource = [{ id: subject.id }];
-      if (request.target.action == 'create') {
+      if (request.target.action == 'create' || request.target.action == 'modify'
+        || request.target.action == 'delete') {
         // insert temporary IDs into resources which are yet to be created
         let counter = 0;
         resources = _.cloneDeep(request.target.resources).map((resource) => {
@@ -238,7 +239,8 @@ export class ACSAuthZ implements IAuthZ {
       authZRequest.target.resources = createResourceTargetWhatIsAllowed(resources);
     } else {
       // isAllowed
-      if (request.target.action == 'create') {
+      if (request.target.action == 'create' || request.target.action == 'modify'
+        || request.target.action == 'delete') {
         // insert temporary IDs into resources which are yet to be created
         let counter = 0;
         resources = _.cloneDeep(request.target.resources).map((resource) => {
