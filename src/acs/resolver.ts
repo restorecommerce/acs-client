@@ -11,16 +11,17 @@ import { Client } from '@restorecommerce/grpc-client';
 import { UnAuthZ } from './authz';
 
 /**
- *
- * @param action
+ * Receives an access request and constructs the Target request object for
+ * access-control-srv and returns a decision for access request or call back
+ * function with permission arguments for inference
+ * @param {AuthZAction} action Action to be performed on resource
  * @param ctx
- * @param input Input for query or mutation.
- * @param cb Async operation to be performed. '
- * If cb is set to null and action is 'read', a generic `service.read(input)` is performed.
- * Cb can be useful in business-specific operations or when in need of some field-specific handling.
+ * @param {Resource | Resource[] | ReadRequest} input Input for query or mutation
+ * @param {Function} cb Async operation to be performed
+ * cb used for business-specific operations or when in need of some field-specific handling
  */
-export async function accessRequest(action: AuthZAction, input: Resource[] | Resource | LoginInput | ReadRequest,
-  ctx: any, cb?: Function): Promise<any | LoginResult | UserSessionData | PolicySetRQ> {
+export async function accessRequest(action: AuthZAction, input: Resource[] | Resource | ReadRequest,
+  ctx: ACSContext, cb?: Function): Promise<any | LoginResult | UserSessionData | PolicySetRQ> {
   let output = {
     details: [
       {
@@ -33,11 +34,11 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
     ]
   };
 
-  if (ctx.req
-    && ctx.req.headers
-    && ctx.req.headers['authorization']
-    && ctx.req.headers['expected-authorization']
-    && ctx.req.headers['authorization'] === ctx.req.headers['expected-authorization']) {
+  if ((ctx as any).req
+    && (ctx as any).req.headers
+    && (ctx as any).req.headers['authorization']
+    && (ctx as any).req.headers['expected-authorization']
+    && (ctx as any).req.headers['authorization'] === (ctx as any).req.headers['expected-authorization']) {
     return cb(input);
   }
 
@@ -49,12 +50,10 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
     }
     return output;
   }
-  if (action === 'session') {
-    return cb ? cb() : null;
-  } else if (action != 'login' && ctx && ctx.session == null) {
+  if (ctx && ctx.session == null) {
     // user registry
     if (!ctx['authN']) { // user registry
-      if (action != 'create' || isResource(input) && input.type != 'user.User'
+      if (action != AuthZAction.CREATE || isResource(input) && input.type != 'user.User'
         || isResourceList(input) && input[0].type != 'user.User') {
         output.details[0].status.message = errors.USER_NOT_LOGGED_IN.message;
         output.details[0].status.code = errors.USER_NOT_LOGGED_IN.code;
@@ -62,28 +61,9 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
       }
     }
   }
-  else if ((action == 'search' && isReadRequest(input)) || (action == 'GET' && isReadRequest(input))) {
-    const resourceName = input.entity;
-    let policySet: PolicySetRQ;
-    try {
-      policySet = await whatIsAllowed(ctx as ACSContext, ['read'], [{ type: resourceName }]);
-      if (action === 'search' || action === 'GET') {
-        output = await cb(policySet);
-        return output;
-      }
-    } catch (err) {
-      logger.error('Error calling whatIsAllowed:', { message: err.message });
-      return {
-        error: {
-          code: [err.code],
-          message: err.message
-        }
-      };
-    }
-  }
 
   let resources: any[] = [];
-  if (action == 'read' && isReadRequest(input)) {
+  if (action == AuthZAction.READ && isReadRequest(input)) {
     const resourceName = input.entity;
     let policySet: PolicySetRQ;
 
@@ -176,22 +156,7 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
     resources = input;
   }
 
-  if (action === 'permissions' && ctx.session && ctx.session.data) {
-    resources = input as Resource[];
-    const actionList: AuthZAction[] = ['create', 'read', 'modify', 'delete', 'execute'];
-    let response: any = {};
-    try {
-      response = await whatIsAllowed(ctx as ACSContext, actionList, resources);
-    } catch (err) {
-      logger.error('Error calling whatIsAllowed :', { message: err.message });
-      response.error = {};
-      response.error.message = [err.message];
-      response.error.code = [err.code];
-    }
-    return response;
-  }
-
-  if (!_.isEmpty(resources) || action == 'execute' || action == 'delete') {
+  if (!_.isEmpty(resources) || action == AuthZAction.DELETE) {
     try {
       // authorization
       let allowed = await isAllowed(ctx as any, action, resources);
@@ -287,6 +252,15 @@ async function whatIsAllowed(ctx: ACSContext, action: AuthZAction[],
   }
 }
 
+/**
+ * parses the input resources list and adds meta data to object and returns Resource[]
+ * @param {Array<any>} resourceList input resources list
+ * @param {AuthZAction} action action to be performed on resource
+ * @param {string} entity target entity
+ * @param {ACSContext} ctx context object
+ * @param {string[]} fields input fields
+ * @return {Resource[]}
+ */
 export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
   entity: string, ctx: ACSContext, fields?: string[]): Resource[] {
   let userData = {};
@@ -295,7 +269,7 @@ export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
   }
   return resourceList.map((resource): Resource => {
     let instance = convertToObject(resource);
-    if (action == 'create' || action == 'delete' || action == 'modify') {
+    if (action == AuthZAction.CREATE || action == AuthZAction.MODIFY || action == AuthZAction.DELETE) {
       instance = createMetadata(instance, userData);
     }
     return {
@@ -307,7 +281,12 @@ export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
 }
 
 function createMetadata(resource: any, userData: any): any {
-  const ownerAttributes: any[] = _.cloneDeep(resource.owner) || [];
+  let ownerAttributes = [];
+  if (resource.meta && resource.meta.owner) {
+    ownerAttributes = _.cloneDeep(resource.meta.owner);
+  } else if (resource.owner) {
+    ownerAttributes = _.cloneDeep(resource.owner);
+  }
   const urns = cfg.get('authorization:urns');
 
   let ownUser = false;
@@ -383,13 +362,6 @@ export interface PayloadStatus {
     message: string,
     code: number;
   };
-}
-
-export interface LoginInput {
-  identifier: string;
-  password: string;
-  rememberMe: boolean;
-  ctx: ACSContext;
 }
 
 export interface LoginResult {

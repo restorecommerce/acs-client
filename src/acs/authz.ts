@@ -114,30 +114,27 @@ export class ACSAuthZ implements IAuthZ {
       subject.role_associations = [];
     }
 
-    // TODO disabling the heirarchical scop check as this would need graph-srv
-    // exposed from resource-srv
-    if (request.target.action != 'execute') {
-      if (!hierarchicalScope) {
-        hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
-      }
-      authZRequest.context.subject = this.encode(_.merge(subject, {
-        hierarchical_scope: hierarchicalScope
-      }));
-      // let idResource = [{ id: subject.id }];
-      if (request.target.action == 'create' || request.target.action == 'modify'
-        || request.target.action == 'delete') {
-        // insert temporary IDs into resources which are yet to be created
-        let counter = 0;
-        resources = _.cloneDeep(request.target.resources).map((resource) => {
-          if (!resource.instance.id) {
-            resource.instance.id = String(counter++);
-            resource.fields.push('id');
-          }
-          return resource;
-        });
-      }
-      authZRequest.context.resources = this.encode(resources);
+
+    if (!hierarchicalScope) {
+      hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
     }
+    authZRequest.context.subject = this.encode(_.merge(subject, {
+      hierarchical_scope: hierarchicalScope
+    }));
+    // let idResource = [{ id: subject.id }];
+    if (request.target.action == 'CREATE' || request.target.action == 'MODIFY'
+      || request.target.action == 'DELETE') {
+      // insert temporary IDs into resources which are yet to be created
+      let counter = 0;
+      resources = _.cloneDeep(request.target.resources).map((resource) => {
+        if (!resource.instance.id) {
+          resource.instance.id = String(counter++);
+          resource.fields.push('id');
+        }
+        return resource;
+      });
+    }
+    authZRequest.context.resources = this.encode(resources);
 
     const response = await this.acs.isAllowed(authZRequest);
 
@@ -213,20 +210,9 @@ export class ACSAuthZ implements IAuthZ {
     return hierarchicalScope;
   }
 
-  reduceUserScope(user: UserSessionData): UserSessionData {
-    const mainScopes = user.scope ? user.scope.role_associations : [];
-    const orgScope = user.scope ? user.scope.scopeOrganization : user.default_scope;
-
-    if (!orgScope || _.isEmpty(mainScopes)) {
-      return; // user has no scope
-    }
-    user.role_associations = mainScopes;
-    return user;
-  }
-
   prepareRequest(request: Request<AuthZTarget | AuthZWhatIsAllowedTarget, AuthZContext>): any {
     let { subject, resources, action } = request.target;
-    this.reduceUserScope(subject);
+    // this.reduceUserScope(subject);
 
     const authZRequest: any = {
       target: {
@@ -239,8 +225,8 @@ export class ACSAuthZ implements IAuthZ {
       authZRequest.target.resources = createResourceTargetWhatIsAllowed(resources);
     } else {
       // isAllowed
-      if (request.target.action == 'create' || request.target.action == 'modify'
-        || request.target.action == 'delete') {
+      if (request.target.action == 'CREATE' || request.target.action == 'MODIFY'
+        || request.target.action == 'DELETE') {
         // insert temporary IDs into resources which are yet to be created
         let counter = 0;
         resources = _.cloneDeep(request.target.resources).map((resource) => {
@@ -272,10 +258,11 @@ export async function initAuthZ(): Promise<void> {
   }
 }
 
-export function createActionTarget(action: AuthZAction | AuthZAction[]): Attribute[] {
+export function createActionTarget(action: any): Attribute[] {
   if (_.isArray(action)) {
     let actionList = [];
     for (let eachAction of action) {
+      eachAction = eachAction.valueOf().toLowerCase();
       actionList.push({
         id: urns.actionID,
         value: urns.action + `:${eachAction}`
@@ -286,7 +273,7 @@ export function createActionTarget(action: AuthZAction | AuthZAction[]): Attribu
   else {
     return [{
       id: urns.actionID,
-      value: urns.action + `:${action}`
+      value: urns.action + `:${action.valueOf().toLowerCase()}`
     }];
   }
 }
@@ -319,35 +306,26 @@ export function createSubjectTarget(subject: UserSessionData | UnauthenticatedDa
 export function createResourceTarget(resources: Resource[], action: AuthZAction | AuthZAction[]) {
   const flattened: Attribute[] = [];
   resources.forEach((resource) => {
-    if (action != 'execute') {
-      const resourceType = formatResourceType(resource.type);
+    const resourceType = formatResourceType(resource.type);
 
-      if (resourceType) {
-        flattened.push({
-          id: urns.entity,
-          value: urns.model + `:${resourceType}`
-        });
-      }
-      if (resource.instance && resource.instance.id) {
-        flattened.push({
-          id: urns.resourceID,
-          value: resource.instance.id
-        });
-      }
+    if (resourceType) {
+      flattened.push({
+        id: urns.entity,
+        value: urns.model + `:${resourceType}`
+      });
+    }
+    if (resource.instance && resource.instance.id) {
+      flattened.push({
+        id: urns.resourceID,
+        value: resource.instance.id
+      });
+    }
 
-      if (resource.fields) {
-        resource.fields.forEach((field) => {
-          flattened.push({
-            id: urns.property,
-            value: urns.model + `:${resourceType}#${field}`
-          });
-        });
-      }
-    } else {
-      resources.forEach((resource) => {
+    if (resource.fields) {
+      resource.fields.forEach((field) => {
         flattened.push({
-          id: urns.operation,
-          value: resource.type
+          id: urns.property,
+          value: urns.model + `:${resourceType}#${field}`
         });
       });
     }

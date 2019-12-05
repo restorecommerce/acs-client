@@ -1,6 +1,12 @@
 import { ACSAuthZ } from './authz';
 
-export declare type AuthZAction = Action | 'login' | 'logout' | 'execute' | 'session' | 'permissions' | 'search' | 'GET';
+export enum AuthZAction {
+  CREATE = 'CREATE',
+  READ = 'READ',
+  MODIFY = 'MODIFY',
+  DELETE = 'DELETE',
+  ALL = '*'
+}
 
 export interface AuthZSubject {
   id: string; // entity ('user', 'service', etc) ID
@@ -18,16 +24,15 @@ export interface Data {
 }
 
 export interface UserSessionData {
-  id: string;
-  name: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  timezone_id: string;
-  locale_id: string;
-  role_associations: RoleAssociation[];
+  id?: string;
+  name?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  timezone_id?: string;
+  locale_id?: string;
+  role_associations?: RoleAssociation[];
   unauthenticated?: boolean;
-  scope?: UserScope; // org instance
   default_scope?: string;
 }
 
@@ -37,7 +42,7 @@ export enum Decision {
   INDETERMINATE = 'INDETERMINATE'
 }
 
-export type Action = '*' | 'read' | 'create' | 'modify' | 'delete';
+// export type Action = '*' | 'read' | 'create' | 'modify' | 'delete';
 
 export interface Resource {
   type: string;
@@ -63,7 +68,7 @@ export interface Response {
 /**
  * Authorization interface
  */
-export interface AuthZ<TSubject, TContext = any, TResource = Resource, TAction = Action> {
+export interface AuthZ<TSubject, TContext = any, TResource = Resource, TAction = AuthZAction> {
   /**
    * Check is the subject is allowed to do an action on a specific resource
    */
@@ -137,7 +142,7 @@ export interface UnauthenticatedData {
 }
 
 export interface ACSContext {
-  authZ: ACSAuthZ;
+  authZ?: ACSAuthZ;
   session: Data;
 }
 

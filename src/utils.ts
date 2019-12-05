@@ -71,7 +71,7 @@ export function handleError(err: string | Error | any): any {
 export async function buildFilterPermissions(policySet: PolicySetRQ,
   ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> {
   const user = ctx.session.data as UserSessionData;
-  const scope = user.scope ? user.scope.scopeOrganization : user.default_scope;
+  const scope = user.default_scope;
   let userScopes: string[] = [];
   if (ctx.session.data && ctx.session.data.userScopes && ctx.session.data.userScopes.length > 0) {
     userScopes = ctx.session.data.userScopes;
