@@ -1,4 +1,7 @@
-import { RoleAssociation, UserScope, BMSLSAUser, UserSessionData, PolicySetRQ, Effect, AttributeTarget, Attribute } from './acs/interfaces';
+import {
+  RoleAssociation, UserScope, UserSessionData,
+  PolicySetRQ, Effect, AttributeTarget, Attribute
+} from './acs/interfaces';
 import * as _ from 'lodash';
 import { QueryArguments, UserQueryArguments } from './acs/resolver';
 import { errors, cfg } from './config';
@@ -44,7 +47,7 @@ export async function reduceRoleAssociations(roleAssociations: RoleAssociation[]
   return scope;
 }
 
-export async function convertDBUser(user: BMSLSAUser): Promise<UserSessionData> {
+export async function convertDBUser(user: UserSessionData): Promise<UserSessionData> {
   const defaultScope: string = user.default_scope || undefined;
   let scope: UserScope;
   if (defaultScope) {
@@ -144,7 +147,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
     }
 
     if (policy.filter) {
-      (query as any) = { filter: {}};
+      (query as any) = { filter: {} };
       if (!query.filter[key]) {
         query.filter[key] = [];
       }

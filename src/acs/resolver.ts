@@ -9,108 +9,67 @@ import { errors, cfg } from '../config';
 import { buildFilterPermissions } from '../utils';
 import { Client } from '@restorecommerce/grpc-client';
 import { UnAuthZ } from './authz';
+import { Unauthenticated, PermissionDenied } from './errors';
 
 /**
- * Receives an access request and constructs the Target request object for
- * access-control-srv and returns a decision for access request or call back
- * function with permission arguments for inference
+ * It turns an API request as can be found in typical Web frameworks like express, koa etc.
+ * into a proper ACS request. For write operations it uses `isAllowed()` and for read operations
+ * it uses `whatIsAllowed()`. For the latter it extends the filter provided in the `ReadRequst`
+ * to enforce the applicapble poilicies. The response is `Decision`
+ * or policy set reverse query `PolicySetRQ`
  * @param {AuthZAction} action Action to be performed on resource
- * @param ctx
- * @param {Resource | Resource[] | ReadRequest} input Input for query or mutation
- * @param {Function} cb Async operation to be performed
- * cb used for business-specific operations or when in need of some field-specific handling
+ * @param {Resource | Resource[] | ReadRequest} request request object either Resource or ReadRequest
+ * @param {ACSContext} ctx Context Object containing requester's subject information
+ * @returns {Decision | PolicySetRQ}
  */
-export async function accessRequest(action: AuthZAction, input: Resource[] | Resource | ReadRequest,
-  ctx: ACSContext, cb?: Function): Promise<any | LoginResult | UserSessionData | PolicySetRQ> {
-  let output = {
-    details: [
-      {
-        payload: null,
-        status: {
-          message: '',
-          code: ''
-        }
-      }
-    ]
-  };
-
-  if ((ctx as any).req
-    && (ctx as any).req.headers
-    && (ctx as any).req.headers['authorization']
-    && (ctx as any).req.headers['expected-authorization']
-    && (ctx as any).req.headers['authorization'] === (ctx as any).req.headers['expected-authorization']) {
-    return cb(input);
-  }
-
-  // authentication
-  // if no token exists in 'ctx' and user is not attempting to sign in
+export async function accessRequest(action: AuthZAction, request: Resource[] | Resource | ReadRequest,
+  ctx: ACSContext): Promise<Decision | PolicySetRQ> {
+  // if authorization is disabled
   if (!cfg.get('authorization:enabled')) {
-    if (cb) {
-      output = await cb(input);
+    // if action is write
+    if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
+      return Decision.PERMIT;
+    } else if (action === AuthZAction.READ) {
+      return await whatIsAllowed(ctx as ACSContext, [action], [{ type: (request as ReadRequest).entity }]);
     }
-    return output;
   }
+
   if (ctx && ctx.session == null) {
     // user registry
     if (!ctx['authN']) { // user registry
-      if (action != AuthZAction.CREATE || isResource(input) && input.type != 'user.User'
-        || isResourceList(input) && input[0].type != 'user.User') {
-        output.details[0].status.message = errors.USER_NOT_LOGGED_IN.message;
-        output.details[0].status.code = errors.USER_NOT_LOGGED_IN.code;
-        return output;
+      if (action != AuthZAction.CREATE || isResource(request) && request.type != 'user'
+        || isResourceList(request) && request[0].type != 'user') {
+        throw new Unauthenticated(errors.USER_NOT_LOGGED_IN.message, errors.USER_NOT_LOGGED_IN.code);
       }
     }
   }
 
   let resources: any[] = [];
-  if (action == AuthZAction.READ && isReadRequest(input)) {
-    const resourceName = input.entity;
+  // for read operations
+  if (action == AuthZAction.READ && isReadRequest(request)) {
+    const resourceName = request.entity;
     let policySet: PolicySetRQ;
-
     try {
       // retrieving set of applicable policies/rules from ACS
       // Note: it is assumed that there is only one policy set
       policySet = await whatIsAllowed(ctx as ACSContext, [action], [{ type: resourceName }]);
     } catch (err) {
       logger.error('Error calling whatIsAllowed:', { message: err.message });
-      return {
-        error: {
-          code: [err.code],
-          message: err.message
-        }
-      };
+      throw err;
     }
 
     // handle case if policySet is empty
     if (_.isEmpty(policySet)) {
       const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was INDETERMINATE`;
-      logger.verbose(msg);
-      output.details[0].status.message = msg;
-      output.details[0].status.code = errors.ACTION_NOT_ALLOWED.code;
-      return output;
+      logger.error(msg);
+      throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
     }
 
-    const permissionArguments = await buildFilterPermissions(policySet, ctx, input.database);
-    if (!permissionArguments) {
-      return {
-        details: [] // no resource retrieved
-      };
-    }
-
-    if (input.database && input.database === 'postgres') {
-      try {
-        output = await cb(permissionArguments);
-      } catch (err) {
-        logger.error('Error while running query', { err });
-        output.details[0].status.message = errors.SYSTEM_ERROR.message;
-        output.details[0].status.code = errors.SYSTEM_ERROR.code;
-      }
-      return output;
-    }
-
-    const finalFilter = { $and: [] };
-    if (!_.isEmpty(input.args.filter)) {
-      let filterArgs = _.cloneDeep(input.args.filter);
+    // extend input filter to enforce applicable policies
+    const permissionArguments = await buildFilterPermissions(policySet, ctx, request.database);
+    const combinedFilter = { $and: [] };
+    if (!_.isEmpty(request.args.filter)) {
+      let filterArgs = _.cloneDeep(request.args.filter);
       if (!_.isArray(filterArgs)) {
         filterArgs = [filterArgs];
       }
@@ -119,79 +78,44 @@ export async function accessRequest(action: AuthZAction, input: Resource[] | Res
         const { value, field, operation } = element;
         payload[field] = { ...payload[field], [`$${operation}`]: value };
       });
-      finalFilter.$and.push(payload);
+      combinedFilter.$and.push(payload);
     }
     if (!_.isEmpty(permissionArguments.filter)) {
-      finalFilter.$and.push(permissionArguments.filter);
+      combinedFilter.$and.push(permissionArguments.filter);
     }
-
-    permissionArguments.filter = finalFilter;
-    delete input.args.filter;
-    _.merge(permissionArguments, input.args, permissionArguments);
-    if (!cb) {
-      output.details[0].status.message = errors.MISSING_OPERATION.message;
-      output.details[0].status.code = errors.MISSING_OPERATION.code;
-      return output;
-    }
-
-    try {
-      output = await cb(permissionArguments);
-    } catch (err) {
-      logger.error('Error while running query', { err });
-      output.details[0].status.message = errors.SYSTEM_ERROR.message;
-      output.details[0].status.code = errors.SYSTEM_ERROR.code;
-    }
-
-    if (!output) {
-      return;
-    }
-    return output;
+    permissionArguments.filter = combinedFilter;
+    delete request.args.filter;
+    _.merge(request.args, permissionArguments);
+    return policySet;
   }
 
-  if (!isResourceList(input) && isResource(input)) {
-    input = [input];
+  if (!isResourceList(request) && isResource(request)) {
+    request = [request];
   }
 
-  if (isResourceList(input)) {
-    resources = input;
+  if (isResourceList(request)) {
+    resources = request;
   }
 
+  // default deny
+  let decision: Decision = Decision.DENY;
+  // for write operations
   if (!_.isEmpty(resources) || action == AuthZAction.DELETE) {
-    try {
-      // authorization
-      let allowed = await isAllowed(ctx as any, action, resources);
+    // authorization
+    decision = await isAllowed(ctx, action, resources);
 
-      if (allowed && allowed.decision != Decision.PERMIT) {
-        const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was ${allowed.decision}`;
-        logger.verbose(msg);
-
-        // output.details = null;
-        output.details[0].status.message = msg;
-        output.details[0].status.code = errors.ACTION_NOT_ALLOWED.code;
-        return output;
-      }
-    } catch (err) {
-      logger.verbose('Error while calling ACS', { err });
-      return {
-        error: {
-          code: [errors.ACTION_NOT_ALLOWED.code],
-          message: ['An error occurred while requesting authorization']
-        }
-      };
+    if (decision && decision != Decision.PERMIT) {
+      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was ${decision}`;
+      logger.error(msg);
+      throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
     }
   }
 
-  if (cb) {
-    output = await cb(input);
-  } else {
-    output.details[0].status.message = errors.MISSING_OPERATION.message;
-    output.details[0].status.code = errors.MISSING_OPERATION.code;
-  }
-  return output;
+  return decision;
 }
 
-export async function isAllowed(ctx: any, action: AuthZAction,
-  resources: Resource[]) {
+export async function isAllowed(ctx: ACSContext, action: AuthZAction,
+  resources: Resource[]): Promise<Decision> {
   if (contextIsUnauthenticated(ctx)) {
     const grpcConfig = cfg.get('client:acs-srv');
     const acsClient = new Client(grpcConfig, logger);
@@ -253,7 +177,8 @@ async function whatIsAllowed(ctx: ACSContext, action: AuthZAction[],
 }
 
 /**
- * parses the input resources list and adds meta data to object and returns Resource[]
+ * parses the input resources list and adds entity meta data to object
+ * and returns resource list Resource[]
  * @param {Array<any>} resourceList input resources list
  * @param {AuthZAction} action action to be performed on resource
  * @param {string} entity target entity
@@ -348,12 +273,17 @@ function convertToObject(resources: any | any[]): any | any[] {
 }
 
 export interface Output {
-  details?: string[];
+  details?: PayloadStatus[];
   error?: OutputError;
 }
 
+// error: {
+//   code: [err.code],
+//   message: err.message
+// }
 export interface OutputError {
-  details: PayloadStatus[];
+  message: string;
+  code: number;
 }
 
 export interface PayloadStatus {

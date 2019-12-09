@@ -42,8 +42,6 @@ export enum Decision {
   INDETERMINATE = 'INDETERMINATE'
 }
 
-// export type Action = '*' | 'read' | 'create' | 'modify' | 'delete';
-
 export interface Resource {
   type: string;
   fields?: string[];
@@ -66,13 +64,13 @@ export interface Response {
 }
 
 /**
- * Authorization interface
+ * isAllowed Authorization interface
  */
 export interface AuthZ<TSubject, TContext = any, TResource = Resource, TAction = AuthZAction> {
   /**
    * Check is the subject is allowed to do an action on a specific resource
    */
-  isAllowed(request: Request<Target<TSubject, TResource, TAction>, TContext>): Promise<Response>;
+  isAllowed(request: Request<Target<TSubject, TResource, TAction>, TContext>): Promise<Decision>;
 }
 
 export interface Credentials {
@@ -116,14 +114,6 @@ export interface UserCredentials extends Credentials {
   password: string;
 }
 
-export interface BootstrapCredentials extends Credentials {
-  apiKey: string;
-}
-
-export interface IBMSLSAAuthZ extends AuthZ<AuthZSubject, AuthZContext, Resource, AuthZAction> {
-  whatIsAllowed(subject: AuthZSubject, resources: Resource[], context: AuthZContext): Promise<any>;
-}
-
 export interface OwnerAttribute {
   id: string;
   value: string;
@@ -154,16 +144,6 @@ export interface Attribute {
 export interface RoleAssociation {
   role: string;
   attributes?: Attribute[];
-}
-
-// complete user interface
-export interface BMSLSAUser extends UserSessionData {
-  meta: MetaInfo;
-  activation_code: string;
-  active: true;
-  password_hash: string;
-  unauthenticated?: boolean;
-  guest: boolean;
 }
 
 export interface MetaInfo {
@@ -211,5 +191,6 @@ export interface AttributeTarget {
 
 export enum Effect {
   PERMIT = 'PERMIT',
-  DENY = 'DENY'
+  DENY = 'DENY',
+  INDETERMINATE = 'INDETERMINATE'
 }

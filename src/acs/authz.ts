@@ -4,7 +4,7 @@ import {
   AuthZAction, AuthZTarget, UserSessionData,
   AuthZWhatIsAllowedTarget, PolicySetRQ, IAuthZ,
   NoAuthTarget, UnauthenticatedData, NoAuthWhatIsAllowedTarget, RoleAssociation,
-  HierarchicalScope, Request, Resource, Response, Decision
+  HierarchicalScope, Request, Resource, Decision
 } from './interfaces';
 import { Client } from '@restorecommerce/grpc-client';
 import { cfg } from '../config';
@@ -26,7 +26,7 @@ export class UnAuthZ implements IAuthZ {
     this.acs = acs;
   }
 
-  async isAllowed(request: Request<NoAuthTarget, AuthZContext>): Promise<Response> {
+  async isAllowed(request: Request<NoAuthTarget, AuthZContext>): Promise<Decision> {
     const authZRequest = {
       target: {
         action: createActionTarget(request.target.action),
@@ -42,9 +42,7 @@ export class UnAuthZ implements IAuthZ {
       console.log(response.error);
       logger.error('Unexpected empty response from ACS');
     } else if (response.data.decision) {
-      return {
-        decision: response.data.decision as Decision
-      };
+      return  response.data.decision;
     }
 
     if (response.error) {
@@ -52,9 +50,7 @@ export class UnAuthZ implements IAuthZ {
       throw new Error('Error while requesting authorization to ACS');
     }
 
-    return {
-      decision: Decision.DENY
-    };
+    return Decision.DENY;
 
   }
   async whatIsAllowed(request: Request<NoAuthWhatIsAllowedTarget, AuthZContext>): Promise<PolicySetRQ> {
@@ -99,7 +95,7 @@ export class ACSAuthZ implements IAuthZ {
    * @param action
    * @param resource
    */
-  async isAllowed(request: Request<AuthZTarget, AuthZContext>, hierarchicalScope?: any): Promise<Response> {
+  async isAllowed(request: Request<AuthZTarget, AuthZContext>, hierarchicalScope?: any): Promise<Decision> {
     const authZRequest = this.prepareRequest(request);
     authZRequest.context = {
       subject: {},
@@ -142,9 +138,7 @@ export class ACSAuthZ implements IAuthZ {
       console.log(response.error);
       logger.error('Unexpected empty response from ACS');
     } else if (response.data.decision) {
-      return {
-        decision: response.data.decision as Decision
-      };
+      return response.data.decision;
     }
 
     if (response.error) {
@@ -152,9 +146,7 @@ export class ACSAuthZ implements IAuthZ {
       throw new Error('Error while requesting authorization to ACS');
     }
 
-    return {
-      decision: Decision.DENY
-    };
+    return Decision.DENY;
   }
 
   /**
