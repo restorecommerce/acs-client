@@ -24,6 +24,18 @@ import { Unauthenticated, PermissionDenied } from './errors';
  */
 export async function accessRequest(action: AuthZAction, request: Resource[] | Resource | ReadRequest,
   ctx: ACSContext): Promise<Decision | PolicySetRQ> {
+  // if apiKey mode is enabled
+  if ((ctx as any).req
+    && (ctx as any).req.headers
+    && (ctx as any).req.headers['authorization']
+    && (ctx as any).req.headers['expected-authorization']
+    && (ctx as any).req.headers['authorization'] === (ctx as any).req.headers['expected-authorization']) {
+    if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
+      return Decision.PERMIT;
+    } else if (action === AuthZAction.READ) {
+      return await whatIsAllowed(ctx as ACSContext, [action], [{ type: (request as ReadRequest).entity }]);
+    }
+  }
   // if authorization is disabled
   if (!cfg.get('authorization:enabled')) {
     // if action is write
