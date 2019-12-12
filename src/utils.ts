@@ -74,12 +74,12 @@ export function handleError(err: string | Error | any): any {
 export async function buildFilterPermissions(policySet: PolicySetRQ,
   ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> {
   const user = ctx.session.data as UserSessionData;
-  const scope = user.default_scope;
+  const scope = user.scope;
   let userScopes: string[] = [];
-  if (ctx.session.data && ctx.session.data.userScopes && ctx.session.data.userScopes.length > 0) {
-    userScopes = ctx.session.data.userScopes;
-  } else {
+  if (scope) {
     userScopes = [scope];
+  } else {
+    userScopes = ctx.session.data.default_scope;
   }
 
   const urns = cfg.get('authorization:urns');

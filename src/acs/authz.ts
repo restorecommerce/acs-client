@@ -42,7 +42,7 @@ export class UnAuthZ implements IAuthZ {
       console.log(response.error);
       logger.error('Unexpected empty response from ACS');
     } else if (response.data.decision) {
-      return  response.data.decision;
+      return response.data.decision;
     }
 
     if (response.error) {
@@ -280,18 +280,23 @@ export function createSubjectTarget(subject: UserSessionData | UnauthenticatedDa
   subject = subject as UserSessionData;
   let flattened = [
     {
-      id: urns.resourceID,
+      id: urns.subjectID,
       value: subject.id
     }];
 
-  subject.role_associations.forEach((roleAssoc) => {
-    flattened.push({
-      id: urns.role,
-      value: roleAssoc.role
-    });
-
-    flattened = flattened.concat(roleAssoc.attributes);
-  });
+  if (subject.scope) {
+    let attributes = [
+      {
+        id: urns.roleScopingEntity,
+        value: urns.orgScope
+      },
+      {
+        id: urns.roleScopingInstance,
+        value: subject.scope
+      }
+    ];
+    flattened = flattened.concat(attributes);
+  }
   return flattened;
 }
 

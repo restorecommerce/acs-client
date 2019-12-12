@@ -34,6 +34,7 @@ export interface UserSessionData {
   role_associations?: RoleAssociation[];
   unauthenticated?: boolean;
   default_scope?: string;
+  scope?: string;
 }
 
 export enum Decision {
