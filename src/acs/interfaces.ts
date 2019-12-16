@@ -34,7 +34,9 @@ export interface UserSessionData {
   role_associations?: RoleAssociation[];
   unauthenticated?: boolean;
   default_scope?: string;
-  scope?: string;
+  scope?: string; // target scope
+  hierarchical_scope?: HierarchicalScope[]; // HR scope for user
+  user_scopes_array?: string[]; // user scopes including HR scopes in array
 }
 
 export enum Decision {
