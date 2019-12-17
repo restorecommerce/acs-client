@@ -184,7 +184,7 @@ async function whatIsAllowed(ctx: ACSContext, action: AuthZAction[],
         resources,
         subject: user
       }
-    });
+    }, user.hierarchical_scope);
   }
 }
 

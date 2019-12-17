@@ -95,7 +95,7 @@ export class ACSAuthZ implements IAuthZ {
    * @param action
    * @param resource
    */
-  async isAllowed(request: Request<AuthZTarget, AuthZContext>, hierarchicalScope?: any): Promise<Decision> {
+  async isAllowed(request: Request<AuthZTarget, AuthZContext>, hierarchicalScope?: HierarchicalScope[]): Promise<Decision> {
     const authZRequest = this.prepareRequest(request);
     authZRequest.context = {
       subject: {},
@@ -155,9 +155,25 @@ export class ACSAuthZ implements IAuthZ {
   * @param action
   * @param resource
   */
-  async whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>): Promise<PolicySetRQ> {
+  async whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>,
+    hierarchicalScope?: HierarchicalScope[]): Promise<PolicySetRQ> {
     const authZRequest = this.prepareRequest(request);
-    authZRequest.context = {};
+    authZRequest.context = {
+      subject: {},
+      resources: [],
+      security: this.encode(request.context.security)
+    };
+    let resources = request.target.resources;
+    const subject = request.target.subject;
+
+
+    if (!hierarchicalScope) {
+      hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
+    }
+    authZRequest.context.subject = this.encode(_.merge(subject, {
+      hierarchical_scope: hierarchicalScope
+    }));
+    authZRequest.context.resources = this.encode(resources);
 
     const response = await this.acs.whatIsAllowed(authZRequest);
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
