@@ -79,25 +79,12 @@ export async function accessRequest(action: AuthZAction, request: Resource[] | R
 
     // extend input filter to enforce applicable policies
     const permissionArguments = await buildFilterPermissions(policySet, ctx, request.database);
-    const combinedFilter = { $and: [] };
-    if (!_.isEmpty(request.args.filter)) {
-      let filterArgs = _.cloneDeep(request.args.filter);
-      if (!_.isArray(filterArgs)) {
-        filterArgs = [filterArgs];
+    if (request.args && request.args.filter) {
+      for (let filter of request.args.filter) {
+        permissionArguments.filter.push(filter);
       }
-      let payload = {};
-      filterArgs && filterArgs.length && filterArgs.forEach(element => {
-        const { value, field, operation } = element;
-        payload[field] = { ...payload[field], [`$${operation}`]: value };
-      });
-      combinedFilter.$and.push(payload);
     }
-    if (!_.isEmpty(permissionArguments.filter)) {
-      combinedFilter.$and.push(permissionArguments.filter);
-    }
-    permissionArguments.filter = combinedFilter;
-    delete request.args.filter;
-    _.merge(request.args, permissionArguments);
+    Object.assign(request.args, permissionArguments);
     return policySet;
   }
 
