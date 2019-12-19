@@ -79,6 +79,11 @@ export async function accessRequest(action: AuthZAction, request: Resource[] | R
 
     // extend input filter to enforce applicable policies
     const permissionArguments = await buildFilterPermissions(policySet, ctx, request.database);
+    if (!permissionArguments) {
+      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was DENY`;
+      logger.error(msg);
+      throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
+    }
     if (request.args && request.args.filter) {
       for (let filter of request.args.filter) {
         permissionArguments.filter.push(filter);

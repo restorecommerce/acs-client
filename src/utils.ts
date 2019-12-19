@@ -1,6 +1,6 @@
 import {
   RoleAssociation, UserScope, UserSessionData,
-  PolicySetRQ, Effect, AttributeTarget, Attribute
+  PolicySetRQ, Effect, AttributeTarget, Attribute, HierarchicalScope
 } from './acs/interfaces';
 import * as _ from 'lodash';
 import { QueryArguments, UserQueryArguments } from './acs/resolver';
@@ -71,15 +71,51 @@ export function handleError(err: string | Error | any): any {
   return error;
 }
 
+function reduceUserScope(hrScope: HierarchicalScope, reducedUserScope: string[]) {
+  reducedUserScope.push(hrScope.id);
+  for (let childNode of hrScope.children) {
+    reduceUserScope(childNode, reducedUserScope);
+  }
+}
+
+function checkTargetScopeExists(hrScope: HierarchicalScope, targetScope: string,
+  reducedUserScope: string[]): boolean {
+  if (hrScope.id === targetScope) {
+    // found the target scope object, iterate and put the orgs in reducedUserScope array
+    reduceUserScope(hrScope, reducedUserScope);
+    return true;
+  } else if (hrScope.children) {
+    for (let childNode of hrScope.children) {
+      if (checkTargetScopeExists(childNode, targetScope, reducedUserScope)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export async function buildFilterPermissions(policySet: PolicySetRQ,
   ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> {
   const user = ctx.session.data as UserSessionData;
-  const totalScopes = user.user_scopes_array;
+  const targetScope = user.scope;
+  const userHRScopes = user.hierarchical_scope;
+  // 1) check if the targetScope resides in userHRScopes if so get the exact HR scope
+  // and construct an array from that HR object and put it into userScopes
+  // 2) If 1 is not true then return undefined
+  let reducedUserScope = [];
+  let targetScopeExists = false;
+  for (let hrScope of userHRScopes) {
+    if (checkTargetScopeExists(hrScope, targetScope, reducedUserScope)) {
+      targetScopeExists = true;
+      break;
+    }
+  }
+  if (!targetScopeExists) {
+    return undefined;
+  }
   let userScopes: string[] = [];
-  if (totalScopes) {
-    userScopes = totalScopes;
-  } else {
-    userScopes = [ctx.session.data.default_scope];
+  if (reduceUserScope && reduceUserScope.length > 0) {
+    userScopes = reducedUserScope;
   }
 
   const urns = cfg.get('authorization:urns');
