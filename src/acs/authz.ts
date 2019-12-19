@@ -350,7 +350,7 @@ export function createResourceTarget(resources: Resource[], action: AuthZAction 
 export function createResourceTargetWhatIsAllowed(resources: Resource[]) {
   const flattened: Attribute[] = [];
   resources.forEach((resource) => {
-    const resourceType = formatResourceType(resource.type);
+    const resourceType = formatResourceType(resource.type, resource.namespace);
 
     if (resource.type.startsWith('mutation') || resource.type.startsWith('query')) {
       resources.forEach((resource) => {

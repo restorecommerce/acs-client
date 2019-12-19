@@ -33,7 +33,10 @@ export async function accessRequest(action: AuthZAction, request: Resource[] | R
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
-      return await whatIsAllowed(ctx as ACSContext, [action], [{ type: (request as ReadRequest).entity }]);
+      return await whatIsAllowed(ctx as ACSContext, [action], [{
+        type: (request as ReadRequest).entity,
+        namespace: (request as ReadRequest).namespace
+      }]);
     }
   }
   // if authorization is disabled
@@ -42,7 +45,10 @@ export async function accessRequest(action: AuthZAction, request: Resource[] | R
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
-      return await whatIsAllowed(ctx as ACSContext, [action], [{ type: (request as ReadRequest).entity }]);
+      return await whatIsAllowed(ctx as ACSContext, [action], [{
+        type: (request as ReadRequest).entity,
+        namespace: (request as ReadRequest).namespace
+      }]);
     }
   }
 
@@ -64,7 +70,10 @@ export async function accessRequest(action: AuthZAction, request: Resource[] | R
     try {
       // retrieving set of applicable policies/rules from ACS
       // Note: it is assumed that there is only one policy set
-      policySet = await whatIsAllowed(ctx as ACSContext, [action], [{ type: resourceName }]);
+      policySet = await whatIsAllowed(ctx as ACSContext, [action], [{
+        type: resourceName,
+        namespace: (request as ReadRequest).namespace
+      }]);
     } catch (err) {
       logger.error('Error calling whatIsAllowed:', { message: err.message });
       throw err;
@@ -314,6 +323,7 @@ export interface ReadRequest {
   entity: string;
   args: QueryArguments;
   database?: string;
+  namespace?: string;
 }
 
 export interface QueryArguments {
