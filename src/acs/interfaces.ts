@@ -48,6 +48,7 @@ export interface Resource {
   type: string;
   fields?: string[];
   instance?: any;
+  namespace?: string;
 }
 
 export interface Target<TSubject, TResource, TAction> {

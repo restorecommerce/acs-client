@@ -187,11 +187,12 @@ async function whatIsAllowed(ctx: ACSContext, action: AuthZAction[],
  * @param {AuthZAction} action action to be performed on resource
  * @param {string} entity target entity
  * @param {ACSContext} ctx context object
+ * @param {string} resourceNamespace name space prefix for resoruce entity
  * @param {string[]} fields input fields
  * @return {Resource[]}
  */
 export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
-  entity: string, ctx: ACSContext, fields?: string[]): Resource[] {
+  entity: string, ctx: ACSContext, resourceNamespace?: string, fields?: string[]): Resource[] {
   let userData = {};
   if (ctx.session && ctx.session.data) {
     userData = (ctx.session.data);
@@ -204,7 +205,8 @@ export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
     return {
       fields: fields || _.keys(instance),
       instance,
-      type: entity
+      type: entity,
+      namespace: resourceNamespace
     };
   });
 }

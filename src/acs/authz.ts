@@ -319,7 +319,7 @@ export function createSubjectTarget(subject: UserSessionData | UnauthenticatedDa
 export function createResourceTarget(resources: Resource[], action: AuthZAction | AuthZAction[]) {
   const flattened: Attribute[] = [];
   resources.forEach((resource) => {
-    const resourceType = formatResourceType(resource.type);
+    const resourceType = formatResourceType(resource.type, resource.namespace);
 
     if (resourceType) {
       flattened.push({
@@ -371,12 +371,16 @@ export function createResourceTargetWhatIsAllowed(resources: Resource[]) {
   return flattened;
 }
 
-function formatResourceType(type: string): string {
+function formatResourceType(type: string, namespacePrefix?: string): string {
   // e.g: contact_point -> contact_point.ContactPoint
   const prefix = type;
   const suffixArray = type.split('_').map((word) => {
     return word.charAt(0).toUpperCase() + word.substring(1);
   });
   const suffix = suffixArray.join('');
-  return `${prefix}.${suffix}`;
+  if (namespacePrefix) {
+    return `${namespacePrefix}.${prefix}.${suffix}`;
+  } else {
+    return `${prefix}.${suffix}`;
+  }
 }
