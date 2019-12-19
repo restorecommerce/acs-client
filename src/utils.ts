@@ -82,6 +82,7 @@ function checkTargetScopeExists(hrScope: HierarchicalScope, targetScope: string,
   reducedUserScope: string[]): boolean {
   if (hrScope.id === targetScope) {
     // found the target scope object, iterate and put the orgs in reducedUserScope array
+    logger.info(`Target entity match found in the user's hierarchical scope`);
     reduceUserScope(hrScope, reducedUserScope);
     return true;
   } else if (hrScope.children) {
@@ -111,6 +112,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
     }
   }
   if (!targetScopeExists) {
+    logger.info(`Target scoping entity ${targetScope} does not exist in user scope`);
     return undefined;
   }
   let userScopes: string[] = [];
