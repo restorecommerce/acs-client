@@ -73,8 +73,10 @@ export function handleError(err: string | Error | any): any {
 
 function reduceUserScope(hrScope: HierarchicalScope, reducedUserScope: string[]) {
   reducedUserScope.push(hrScope.id);
-  for (let childNode of hrScope.children) {
-    reduceUserScope(childNode, reducedUserScope);
+  if (hrScope.children) {
+    for (let childNode of hrScope.children) {
+      reduceUserScope(childNode, reducedUserScope);
+    }
   }
 }
 
@@ -112,7 +114,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
     }
   }
   if (!targetScopeExists) {
-    logger.info(`Target scoping entity ${targetScope} does not exist in user scope`);
+    logger.info(`Target scoping entity ${targetScope} does not exist in user scope or no matching entity rule found`);
     return undefined;
   }
   let userScopes: string[] = [];
