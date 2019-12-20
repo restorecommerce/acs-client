@@ -16,7 +16,8 @@ import { Unauthenticated, PermissionDenied } from './errors';
  * into a proper ACS request. For write operations it uses `isAllowed()` and for read operations
  * it uses `whatIsAllowed()`. For the latter it extends the filter provided in the `ReadRequst`
  * to enforce the applicapble poilicies. The response is `Decision`
- * or policy set reverse query `PolicySetRQ`
+ * or policy set reverse query `PolicySetRQ` depending on the requeste operation `isAllowed()` or
+ * `whatIsAllowed()` respectively.
  * @param {AuthZAction} action Action to be performed on resource
  * @param {Resource | Resource[] | ReadRequest} request request object either Resource or ReadRequest
  * @param {ACSContext} ctx Context Object containing requester's subject information
