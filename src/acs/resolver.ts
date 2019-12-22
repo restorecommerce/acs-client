@@ -96,6 +96,9 @@ export async function accessRequest(action: AuthZAction, request: Resource[] | R
     }
     if (request.args && request.args.filter) {
       for (let filter of request.args.filter) {
+        if (!_.isArray(permissionArguments.filter)) {
+          permissionArguments.filter = [filter];
+        }
         permissionArguments.filter.push(filter);
       }
     }
