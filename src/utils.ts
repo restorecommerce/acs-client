@@ -119,6 +119,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
   for (let roleAssoc of userRoleAssociations) {
     if (roleAssoc.attributes && roleAssoc.attributes.length === 0) {
       targetScopeExists = true;
+      userScopes = [targetScope];
       break;
     }
   }
@@ -160,7 +161,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
         }
 
         for (let rule of policy.rules) {
-          if (rule.effect == effect) {
+          if (rule.effect == effect && effect == Effect.PERMIT) {
             policyFilters.push(buildQueryFromTarget(rule.target, effect, userScopes, urns, rule.condition, ctx, database));
           }
         }
@@ -183,6 +184,9 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
   }
 
   const key = applicable == Effect.PERMIT ? '$or' : '$and';
+  if (policyFilters.length === 0) {
+    return undefined;
+  }
   for (let policy of policyFilters) {
     if (policy.filter && database && database === 'postgres') {
       // add a filter for org key based on user scope
