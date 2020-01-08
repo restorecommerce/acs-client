@@ -107,8 +107,17 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
   // 2) If 1 is not true then return undefined
   let reducedUserScope = [];
   let targetScopeExists = false;
+  let userScopes: string[] = [];
   for (let hrScope of userHRScopes) {
+    // reduce userScope
     if (checkTargetScopeExists(hrScope, targetScope, reducedUserScope)) {
+      targetScopeExists = true;
+      break;
+    }
+  }
+  const userRoleAssociations = user.role_associations;
+  for (let roleAssoc of userRoleAssociations) {
+    if (roleAssoc.attributes && roleAssoc.attributes.length === 0) {
       targetScopeExists = true;
       break;
     }
@@ -117,8 +126,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
     logger.info(`Target scoping entity ${targetScope} does not exist in user scope or no matching entity rule found`);
     return undefined;
   }
-  let userScopes: string[] = [];
-  if (reduceUserScope && reduceUserScope.length > 0) {
+  if (reducedUserScope && reducedUserScope.length > 0) {
     userScopes = reducedUserScope;
   }
 
