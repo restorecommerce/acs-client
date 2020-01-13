@@ -6,7 +6,7 @@ import {
   NoAuthTarget, UnauthenticatedData, NoAuthWhatIsAllowedTarget, RoleAssociation,
   HierarchicalScope, Request, Resource, Decision
 } from './interfaces';
-import { Client } from '@restorecommerce/grpc-client';
+import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { cfg } from '../config';
 import logger from '../logger';
 
@@ -110,6 +110,9 @@ export class ACSAuthZ implements IAuthZ {
       subject.role_associations = [];
     }
 
+    if (request.target.action == 'MODIFY' || request.target.action == 'DELETE') {
+      resources = await this.getResourcesWithMetadata(resources);
+    }
 
     if (!hierarchicalScope) {
       hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
@@ -118,8 +121,7 @@ export class ACSAuthZ implements IAuthZ {
       hierarchical_scope: hierarchicalScope
     }));
     // let idResource = [{ id: subject.id }];
-    if (request.target.action == 'CREATE' || request.target.action == 'MODIFY'
-      || request.target.action == 'DELETE') {
+    if (request.target.action == 'CREATE') {
       // insert temporary IDs into resources which are yet to be created
       let counter = 0;
       resources = _.cloneDeep(request.target.resources).map((resource) => {
@@ -147,6 +149,75 @@ export class ACSAuthZ implements IAuthZ {
     }
 
     return Decision.DENY;
+  }
+
+  /**
+   * Read the resource's metadata on `modify`.
+   * @param resources
+   */
+  private async getResourcesWithMetadata(resources: Resource[]) {
+    const ids = [];
+    let entity;
+    for (let resource of resources) {
+      if (!entity) {
+        entity = resource.type;
+      }
+
+      if (resource.instance && resource.instance.id) {
+        // "special" resources such as `admin_room_skips` do not have an ID
+        ids.push({ id: resource.instance.id });
+      }
+    }
+
+    if (!_.isEmpty(ids)) {
+      const grpcConfig = cfg.get(`client:${entity}`);
+      if (grpcConfig) {
+        const client = new Client(grpcConfig, logger);
+        const service = await client.connect();
+        let result;
+        if (entity == 'job') {
+          let jobIds = [];
+          for (let resource of resources) {
+            if (resource.instance && resource.instance.id) {
+              jobIds.push(resource.instance.id);
+            }
+          }
+          result = await service.read({
+            filter: {
+              job_ids: jobIds
+            }
+          });
+        } else {
+          result = await service.read({
+            filter: toStruct({
+              $or: ids
+            })
+          });
+        }
+        if (result.error) {
+          throw new Error('Error occurred while reading resources before updating: ' + result.error);
+        }
+
+        return result.data.items.map((item): Resource => {
+          return {
+            instance: item,
+            type: entity,
+            fields: []
+          };
+        });
+      }
+    } else {
+       // insert temporary IDs into resources which are yet to be created
+       let counter = 0;
+       for (let resource of resources) {
+        if (!resource.instance.id) {
+          resource.instance.id = String(counter++);
+          resource.fields.push('id');
+        }
+
+       }
+    }
+    return resources;
   }
 
   /**
