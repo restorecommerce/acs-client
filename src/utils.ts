@@ -161,7 +161,7 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
         }
 
         for (let rule of policy.rules) {
-          if (rule.effect == effect && effect == Effect.PERMIT) {
+          if (rule.effect == effect) {
             policyFilters.push(buildQueryFromTarget(rule.target, effect, userScopes, urns, rule.condition, ctx, database));
           }
         }
