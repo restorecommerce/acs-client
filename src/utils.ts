@@ -97,40 +97,76 @@ function checkTargetScopeExists(hrScope: HierarchicalScope, targetScope: string,
   return false;
 }
 
+function checkUserSubjectMatch(user: UserSessionData, ruleSubjectAttributes: Attribute[],
+  reducedUserScope?: string[]): boolean {
+  // 1) Iterate through ruleSubjectAttributes and check if the roleScopingEntity URN and
+  // role URN exists
+  // 2) Now check if the subject rule role value matches with one of the users ctx role_associations
+  // then get the corresponding scope instance and check if the targetScope is present in user HR scope Object
+
+  let roleScopeEntExists = false;
+  let roleValueExists = false;
+  let ruleRoleValue;
+  let ruleRoleScopeEntityName;
+  const urns = cfg.get('authorization:urns');
+  if (ruleSubjectAttributes.length === 0) {
+    return true;
+  }
+  for (let attribute of ruleSubjectAttributes) {
+    if (attribute.id === urns.roleScopingEntity) {
+      roleScopeEntExists = true;
+      ruleRoleScopeEntityName = attribute.value;
+    } else if (attribute.id === urns.role) {
+      roleValueExists = true;
+      ruleRoleValue = attribute.value;
+    }
+  }
+
+  let userAssocScope;
+  let userAssocHRScope: HierarchicalScope;
+  if (roleScopeEntExists && roleValueExists) {
+    const userRoleAssocs = user.role_associations;
+    for (let role of userRoleAssocs) {
+      if (role.role === ruleRoleValue) {
+        // check the targetScope exists in the user HR scope object
+        let roleScopeEntityNameMatched = false;
+        for (let roleAttrs of role.attributes) {
+          // urn:restorecommerce:acs:names:roleScopingInstance
+          if (roleAttrs.id === urns.roleScopingEntity &&
+            roleAttrs.value === ruleRoleScopeEntityName) {
+            roleScopeEntityNameMatched = true;
+          } else if (roleScopeEntityNameMatched && roleAttrs.id === urns.roleScopingInstance) {
+            userAssocScope = roleAttrs.value;
+            break;
+          }
+        }
+        // check if this userAssocScope's HR object contains the targetScope
+        for (let hrScope of user.hierarchical_scope) {
+          if (hrScope.id === userAssocScope) {
+            userAssocHRScope = hrScope;
+            break;
+          }
+        }
+        if (userAssocHRScope &&
+          checkTargetScopeExists(userAssocHRScope, user.scope, reducedUserScope)) {
+            return true;
+        }
+      }
+    }
+  } else if (!roleScopeEntExists && roleValueExists) {
+    const userRoleAssocs = user.role_associations;
+    for (let role of userRoleAssocs) {
+      if (role.role === ruleRoleValue) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export async function buildFilterPermissions(policySet: PolicySetRQ,
   ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> {
   const user = ctx.session.data as UserSessionData;
-  const targetScope = user.scope;
-  const userHRScopes = user.hierarchical_scope;
-  // 1) check if the targetScope resides in userHRScopes if so get the exact HR scope
-  // and construct an array from that HR object and put it into userScopes
-  // 2) If 1 is not true then return undefined
-  let reducedUserScope = [];
-  let targetScopeExists = false;
-  let userScopes: string[] = [];
-  for (let hrScope of userHRScopes) {
-    // reduce userScope
-    if (checkTargetScopeExists(hrScope, targetScope, reducedUserScope)) {
-      targetScopeExists = true;
-      break;
-    }
-  }
-  const userRoleAssociations = user.role_associations;
-  for (let roleAssoc of userRoleAssociations) {
-    if (roleAssoc.attributes && roleAssoc.attributes.length === 0) {
-      targetScopeExists = true;
-      userScopes = [targetScope];
-      break;
-    }
-  }
-  if (!targetScopeExists) {
-    logger.info(`Target scoping entity ${targetScope} does not exist in user scope or no matching entity rule found`);
-    return undefined;
-  }
-  if (reducedUserScope && reducedUserScope.length > 0) {
-    userScopes = reducedUserScope;
-  }
-
   const urns = cfg.get('authorization:urns');
   let query = {
     filter: []
@@ -144,8 +180,14 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
     for (let policy of policySet.policies) {
       if (policy.has_rules) {
         const algorithm = policy.combining_algorithm;
-        // check pSet.CA, target attributes and effect
-        // if not effect, check rule and do the same there!
+        // iterate through policy_set and check subject in policy and Rule:
+        if (policy.target && policy.target.subject) {
+          let userSubjectMatched = checkUserSubjectMatch(user, policy.target.subject);
+          if (!userSubjectMatched) {
+            logger.debug(`Skipping policy as policy subject and user subject don't match`);
+            continue;
+          }
+        }
         let effect: Effect;
         for (let rule of policy.rules) {
           if (algorithm == urns.permitOverrides && rule.effect == Effect.PERMIT) {
@@ -161,8 +203,18 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
         }
 
         for (let rule of policy.rules) {
+          let reducedUserScope = [];
+          if (rule.target && rule.target.subject) {
+            let userSubjectMatched = checkUserSubjectMatch(user, rule.target.subject, reducedUserScope);
+            if (!userSubjectMatched) {
+              logger.debug(`Skipping rule as user subject and rule subject don't match`);
+              continue;
+            } else if (userSubjectMatched && reducedUserScope.length === 0) {
+              reducedUserScope = [user.scope];
+            }
+          }
           if (rule.effect == effect) {
-            policyFilters.push(buildQueryFromTarget(rule.target, effect, userScopes, urns, rule.condition, ctx, database));
+            policyFilters.push(buildQueryFromTarget(rule.target, effect, reducedUserScope, urns, rule.condition, ctx, database));
           }
         }
         policyEffects.push(effect);
