@@ -14,7 +14,124 @@ export declare type Authorizer = ACSAuthZ;
 export let authZ: Authorizer;
 const urns = cfg.get('authorization:urns');
 
+export const createActionTarget = (action: any): Attribute[] => {
+  if (_.isArray(action)) {
+    let actionList = [];
+    for (let eachAction of action) {
+      eachAction = eachAction.valueOf().toLowerCase();
+      actionList.push({
+        id: urns.actionID,
+        value: urns.action + `:${eachAction}`
+      });
+    }
+    return actionList;
+  }
+  else {
+    return [{
+      id: urns.actionID,
+      value: urns.action + `:${action.valueOf().toLowerCase()}`
+    }];
+  }
+};
 
+export const createSubjectTarget = (subject: UserSessionData | UnauthenticatedData): Attribute[] => {
+  if (subject.unauthenticated) {
+    return [{
+      id: urns.unauthenticated_user,
+      value: 'true'
+    }];
+  }
+  subject = subject as UserSessionData;
+  let flattened = [
+    {
+      id: urns.subjectID,
+      value: subject.id
+    }];
+
+  if (subject.scope) {
+    let attributes = [
+      {
+        id: urns.roleScopingEntity,
+        value: urns.orgScope
+      },
+      {
+        id: urns.roleScopingInstance,
+        value: subject.scope
+      }
+    ];
+    flattened = flattened.concat(attributes);
+  }
+  return flattened;
+};
+
+const formatResourceType = (type: string, namespacePrefix?: string): string => {
+  // e.g: contact_point -> contact_point.ContactPoint
+  const prefix = type;
+  const suffixArray = type.split('_').map((word) => {
+    return word.charAt(0).toUpperCase() + word.substring(1);
+  });
+  const suffix = suffixArray.join('');
+  if (namespacePrefix) {
+    return `${namespacePrefix}.${prefix}.${suffix}`;
+  } else {
+    return `${prefix}.${suffix}`;
+  }
+};
+
+export const createResourceTarget = (resources: Resource[], action: AuthZAction | AuthZAction[]) => {
+  const flattened: Attribute[] = [];
+  resources.forEach((resource) => {
+    const resourceType = formatResourceType(resource.type, resource.namespace);
+
+    if (resourceType) {
+      flattened.push({
+        id: urns.entity,
+        value: urns.model + `:${resourceType}`
+      });
+    }
+    if (resource.instance && resource.instance.id) {
+      flattened.push({
+        id: urns.resourceID,
+        value: resource.instance.id
+      });
+    }
+
+    if (resource.fields) {
+      resource.fields.forEach((field) => {
+        flattened.push({
+          id: urns.property,
+          value: urns.model + `:${resourceType}#${field}`
+        });
+      });
+    }
+  });
+
+  return flattened;
+};
+
+export const createResourceTargetWhatIsAllowed = (resources: Resource[]) => {
+  const flattened: Attribute[] = [];
+  resources.forEach((resource) => {
+    const resourceType = formatResourceType(resource.type, resource.namespace);
+
+    if (resource.type.startsWith('mutation') || resource.type.startsWith('query')) {
+      resources.forEach((resource) => {
+        flattened.push({
+          id: urns.operation,
+          value: resource.type
+        });
+      });
+    }
+    else {
+      flattened.push({
+        id: urns.entity,
+        value: urns.model + `:${resourceType}`
+      });
+    }
+  });
+
+  return flattened;
+};
 
 export class UnAuthZ implements IAuthZ {
   acs: any;
@@ -207,15 +324,14 @@ export class ACSAuthZ implements IAuthZ {
         });
       }
     } else {
-       // insert temporary IDs into resources which are yet to be created
-       let counter = 0;
-       for (let resource of resources) {
+      // insert temporary IDs into resources which are yet to be created
+      let counter = 0;
+      for (let resource of resources) {
         if (!resource.instance.id) {
           resource.instance.id = String(counter++);
           resource.fields.push('id');
         }
-
-       }
+      }
     }
     return resources;
   }
@@ -324,7 +440,7 @@ export class ACSAuthZ implements IAuthZ {
   }
 }
 
-export async function initAuthZ(): Promise<void> {
+export const initAuthZ = async (): Promise<void> => {
   if (!authZ) {
     const authzCfg = cfg.get('authorization');
     // gRPC interface for access-control-srv
@@ -335,123 +451,4 @@ export async function initAuthZ(): Promise<void> {
       authZ = new ACSAuthZ(acs);
     }
   }
-}
-
-export function createActionTarget(action: any): Attribute[] {
-  if (_.isArray(action)) {
-    let actionList = [];
-    for (let eachAction of action) {
-      eachAction = eachAction.valueOf().toLowerCase();
-      actionList.push({
-        id: urns.actionID,
-        value: urns.action + `:${eachAction}`
-      });
-    }
-    return actionList;
-  }
-  else {
-    return [{
-      id: urns.actionID,
-      value: urns.action + `:${action.valueOf().toLowerCase()}`
-    }];
-  }
-}
-
-export function createSubjectTarget(subject: UserSessionData | UnauthenticatedData): Attribute[] {
-  if (subject.unauthenticated) {
-    return [{
-      id: urns.unauthenticated_user,
-      value: 'true'
-    }];
-  }
-  subject = subject as UserSessionData;
-  let flattened = [
-    {
-      id: urns.subjectID,
-      value: subject.id
-    }];
-
-  if (subject.scope) {
-    let attributes = [
-      {
-        id: urns.roleScopingEntity,
-        value: urns.orgScope
-      },
-      {
-        id: urns.roleScopingInstance,
-        value: subject.scope
-      }
-    ];
-    flattened = flattened.concat(attributes);
-  }
-  return flattened;
-}
-
-export function createResourceTarget(resources: Resource[], action: AuthZAction | AuthZAction[]) {
-  const flattened: Attribute[] = [];
-  resources.forEach((resource) => {
-    const resourceType = formatResourceType(resource.type, resource.namespace);
-
-    if (resourceType) {
-      flattened.push({
-        id: urns.entity,
-        value: urns.model + `:${resourceType}`
-      });
-    }
-    if (resource.instance && resource.instance.id) {
-      flattened.push({
-        id: urns.resourceID,
-        value: resource.instance.id
-      });
-    }
-
-    if (resource.fields) {
-      resource.fields.forEach((field) => {
-        flattened.push({
-          id: urns.property,
-          value: urns.model + `:${resourceType}#${field}`
-        });
-      });
-    }
-  });
-
-  return flattened;
-}
-
-export function createResourceTargetWhatIsAllowed(resources: Resource[]) {
-  const flattened: Attribute[] = [];
-  resources.forEach((resource) => {
-    const resourceType = formatResourceType(resource.type, resource.namespace);
-
-    if (resource.type.startsWith('mutation') || resource.type.startsWith('query')) {
-      resources.forEach((resource) => {
-        flattened.push({
-          id: urns.operation,
-          value: resource.type
-        });
-      });
-    }
-    else {
-      flattened.push({
-        id: urns.entity,
-        value: urns.model + `:${resourceType}`
-      });
-    }
-  });
-
-  return flattened;
-}
-
-function formatResourceType(type: string, namespacePrefix?: string): string {
-  // e.g: contact_point -> contact_point.ContactPoint
-  const prefix = type;
-  const suffixArray = type.split('_').map((word) => {
-    return word.charAt(0).toUpperCase() + word.substring(1);
-  });
-  const suffix = suffixArray.join('');
-  if (namespacePrefix) {
-    return `${namespacePrefix}.${prefix}.${suffix}`;
-  } else {
-    return `${prefix}.${suffix}`;
-  }
-}
+};

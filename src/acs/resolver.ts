@@ -11,6 +11,151 @@ import { Client } from '@restorecommerce/grpc-client';
 import { UnAuthZ } from './authz';
 import { Unauthenticated, PermissionDenied } from './errors';
 
+
+const contextIsUnauthenticated = (object: any): object is UnauthenticatedContext => {
+  return !!object && 'session' in object && 'data' in object['session']
+    && 'unauthenticated' in object['session']['data'] && object['session']['data']['unauthenticated'];
+};
+
+const whatIsAllowed = async (ctx: ACSContext, action: AuthZAction[], resources: Resource[]) => {
+  if (contextIsUnauthenticated(ctx)) {
+    const grpcConfig = cfg.get('client:acs-srv');
+    const acsClient = new Client(grpcConfig, logger);
+    const acs = await acsClient.connect();
+    return new UnAuthZ(acs).whatIsAllowed({
+      target: {
+        action, resources, subject: ctx.session.data
+      },
+      context: {
+        security: {}
+      }
+    });
+  } else {
+    const user = ctx.session.data as UserSessionData;
+    return ctx.authZ.whatIsAllowed({
+      context: {
+        security: {}
+      },
+      target: {
+        action,
+        resources,
+        subject: user
+      }
+    }, user.hierarchical_scope);
+  }
+};
+
+const isResource = (object: any): object is Resource => {
+  return 'type' in object;
+};
+
+const isResourceList = (object: any): object is Resource[] => {
+  return _.isArray(object) && isResource(object[0]);
+};
+
+const isReadRequest = (object: any): object is ReadRequest => {
+  return 'entity' in object;
+};
+
+export const isAllowed = async (ctx: ACSContext, action: AuthZAction, resources: Resource[]): Promise<Decision> => {
+  if (contextIsUnauthenticated(ctx)) {
+    const grpcConfig = cfg.get('client:acs-srv');
+    const acsClient = new Client(grpcConfig, logger);
+    const acs = await acsClient.connect();
+    return new UnAuthZ(acs).isAllowed({
+      target: {
+        action, resources, subject: ctx.session.data
+      },
+      context: {
+        security: {}
+      }
+    });
+  } else {
+    let user;
+    if (ctx && ctx.session && ctx.session.data) {
+      user = ctx.session.data as UserSessionData;
+    }
+
+    return ctx.authZ.isAllowed({
+      context: {
+        security: {}
+      },
+      target: {
+        action,
+        resources,
+        subject: user
+      }
+    }, user.hierarchical_scope);
+  }
+};
+
+const createMetadata = (resource: any, userData: any): any => {
+  let ownerAttributes = [];
+  if (resource.meta && resource.meta.owner) {
+    ownerAttributes = _.cloneDeep(resource.meta.owner);
+  } else if (resource.owner) {
+    ownerAttributes = _.cloneDeep(resource.owner);
+  }
+  const urns = cfg.get('authorization:urns');
+
+  let ownUser = false;
+  let foundEntity = false;
+  for (let attribute of ownerAttributes) {
+    if (attribute.id == urns.ownerIndicatoryEntity && attribute.value == urns.user) {
+      foundEntity = true;
+    } else if (attribute.id == urns.ownerInstance && attribute.value == userData.id && foundEntity) {
+      ownUser = true;
+      break;
+    }
+  }
+
+  if (resource.orgKey) {
+    ownerAttributes.push(
+      {
+        id: urns.ownerIndicatoryEntity,
+        value: urns.organization
+      },
+      {
+        id: urns.ownerInstance,
+        value: resource.orgKey
+      });
+  }
+
+  if (!ownUser && !!userData.id) {
+    ownerAttributes.push(
+      {
+        id: urns.ownerIndicatoryEntity,
+        value: urns.user
+      },
+      {
+        id: urns.ownerInstance,
+        value: userData.id
+      });
+  }
+
+  delete resource.owner;
+
+  if (!resource.meta) {
+    resource.meta = {};
+  }
+  resource.meta.modified_by = userData.id;
+  resource.meta.owner = ownerAttributes;
+  return resource;
+};
+
+const convertToObject = (resources: any | any[]): any | any[] => {
+  if (!_.isArray(resources)) {
+    return JSON.parse(JSON.stringify(resources));
+  }
+  // GraphQL object is a pseudo-object;
+  // when processing its fields, we get an exception from gRPC
+  // so this fix is to sanitize all fields
+  return resources.map((resource) => {
+    const stringified = JSON.stringify(resource);
+    return JSON.parse(stringified);
+  });
+};
+
 /**
  * It turns an API request as can be found in typical Web frameworks like express, koa etc.
  * into a proper ACS request. For write operations it uses `isAllowed()` and for read operations
@@ -23,8 +168,8 @@ import { Unauthenticated, PermissionDenied } from './errors';
  * @param {ACSContext} ctx Context Object containing requester's subject information
  * @returns {Decision | PolicySetRQ}
  */
-export async function accessRequest(action: AuthZAction, request: Resource[] | Resource | ReadRequest,
-  ctx: ACSContext): Promise<Decision | PolicySetRQ> {
+export const accessRequest = async(action: AuthZAction, request: Resource[] | Resource | ReadRequest,
+  ctx: ACSContext): Promise<Decision | PolicySetRQ> => {
   // if apiKey mode is enabled
   if ((ctx as any).req
     && (ctx as any).req.headers
@@ -129,69 +274,7 @@ export async function accessRequest(action: AuthZAction, request: Resource[] | R
   }
 
   return decision;
-}
-
-export async function isAllowed(ctx: ACSContext, action: AuthZAction,
-  resources: Resource[]): Promise<Decision> {
-  if (contextIsUnauthenticated(ctx)) {
-    const grpcConfig = cfg.get('client:acs-srv');
-    const acsClient = new Client(grpcConfig, logger);
-    const acs = await acsClient.connect();
-    return new UnAuthZ(acs).isAllowed({
-      target: {
-        action, resources, subject: ctx.session.data
-      },
-      context: {
-        security: {}
-      }
-    });
-  } else {
-    let user;
-    if (ctx && ctx.session && ctx.session.data) {
-      user = ctx.session.data as UserSessionData;
-    }
-
-    return ctx.authZ.isAllowed({
-      context: {
-        security: {}
-      },
-      target: {
-        action,
-        resources,
-        subject: user
-      }
-    }, user.hierarchical_scope);
-  }
-}
-
-async function whatIsAllowed(ctx: ACSContext, action: AuthZAction[],
-  resources: Resource[]) {
-  if (contextIsUnauthenticated(ctx)) {
-    const grpcConfig = cfg.get('client:acs-srv');
-    const acsClient = new Client(grpcConfig, logger);
-    const acs = await acsClient.connect();
-    return new UnAuthZ(acs).whatIsAllowed({
-      target: {
-        action, resources, subject: ctx.session.data
-      },
-      context: {
-        security: {}
-      }
-    });
-  } else {
-    const user = ctx.session.data as UserSessionData;
-    return ctx.authZ.whatIsAllowed({
-      context: {
-        security: {}
-      },
-      target: {
-        action,
-        resources,
-        subject: user
-      }
-    }, user.hierarchical_scope);
-  }
-}
+};
 
 /**
  * parses the input resources list and adds entity meta data to object
@@ -204,8 +287,8 @@ async function whatIsAllowed(ctx: ACSContext, action: AuthZAction[],
  * @param {string[]} fields input fields
  * @return {Resource[]}
  */
-export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
-  entity: string, ctx: ACSContext, resourceNamespace?: string, fields?: string[]): Resource[] {
+export const parseResourceList = (resourceList: Array<any>, action: AuthZAction,
+  entity: string, ctx: ACSContext, resourceNamespace?: string, fields?: string[]): Resource[] => {
   let userData = {};
   if (ctx.session && ctx.session.data) {
     userData = (ctx.session.data);
@@ -222,74 +305,7 @@ export function parseResourceList(resourceList: Array<any>, action: AuthZAction,
       namespace: resourceNamespace
     };
   });
-}
-
-function createMetadata(resource: any, userData: any): any {
-  let ownerAttributes = [];
-  if (resource.meta && resource.meta.owner) {
-    ownerAttributes = _.cloneDeep(resource.meta.owner);
-  } else if (resource.owner) {
-    ownerAttributes = _.cloneDeep(resource.owner);
-  }
-  const urns = cfg.get('authorization:urns');
-
-  let ownUser = false;
-  let foundEntity = false;
-  for (let attribute of ownerAttributes) {
-    if (attribute.id == urns.ownerIndicatoryEntity && attribute.value == urns.user) {
-      foundEntity = true;
-    } else if (attribute.id == urns.ownerInstance && attribute.value == userData.id && foundEntity) {
-      ownUser = true;
-      break;
-    }
-  }
-
-  if (resource.orgKey) {
-    ownerAttributes.push(
-      {
-        id: urns.ownerIndicatoryEntity,
-        value: urns.organization
-      },
-      {
-        id: urns.ownerInstance,
-        value: resource.orgKey
-      });
-  }
-
-  if (!ownUser && !!userData.id) {
-    ownerAttributes.push(
-      {
-        id: urns.ownerIndicatoryEntity,
-        value: urns.user
-      },
-      {
-        id: urns.ownerInstance,
-        value: userData.id
-      });
-  }
-
-  delete resource.owner;
-
-  if (!resource.meta) {
-    resource.meta = {};
-  }
-  resource.meta.modified_by = userData.id;
-  resource.meta.owner = ownerAttributes;
-  return resource;
-}
-
-function convertToObject(resources: any | any[]): any | any[] {
-  if (!_.isArray(resources)) {
-    return JSON.parse(JSON.stringify(resources));
-  }
-  // GraphQL object is a pseudo-object;
-  // when processing its fields, we get an exception from gRPC
-  // so this fix is to sanitize all fields
-  return resources.map((resource) => {
-    const stringified = JSON.stringify(resource);
-    return JSON.parse(stringified);
-  });
-}
+};
 
 export interface Output {
   details?: PayloadStatus[];
@@ -308,7 +324,7 @@ export interface OutputError {
 export interface PayloadStatus {
   payload: any;
   status: {
-    message: string,
+    message: string;
     code: number;
   };
 }
@@ -345,25 +361,9 @@ export interface RoleRequest {
   role: string; // role ID
   organizations: string[]; //
 }
+
 export interface FilterType {
   field?: string;
   value?: string;
   operation: Object;
-}
-
-function isResource(object: any): object is Resource {
-  return 'type' in object;
-}
-
-function isResourceList(object: any): object is Resource[] {
-  return _.isArray(object) && isResource(object[0]);
-}
-
-function isReadRequest(object: any): object is ReadRequest {
-  return 'entity' in object;
-}
-
-function contextIsUnauthenticated(object: any): object is UnauthenticatedContext {
-  return !!object && 'session' in object && 'data' in object['session']
-    && 'unauthenticated' in object['session']['data'] && object['session']['data']['unauthenticated'];
 }

@@ -8,8 +8,8 @@ import { errors, cfg } from './config';
 import * as nodeEval from 'node-eval';
 import logger from './logger';
 
-export async function reduceRoleAssociations(roleAssociations: RoleAssociation[],
-  scopeID: string): Promise<UserScope> {
+export const reduceRoleAssociations = async (roleAssociations: RoleAssociation[],
+  scopeID: string): Promise<UserScope> => {
   const urns = cfg.get('authorization:urns');
   const scope = {
     role_associations: [],
@@ -45,9 +45,9 @@ export async function reduceRoleAssociations(roleAssociations: RoleAssociation[]
   }
 
   return scope;
-}
+};
 
-export async function convertDBUser(user: UserSessionData): Promise<UserSessionData> {
+export const convertDBUser = async (user: UserSessionData): Promise<UserSessionData> => {
   const defaultScope: string = user.default_scope || undefined;
   let scope: UserScope;
   if (defaultScope) {
@@ -59,9 +59,9 @@ export async function convertDBUser(user: UserSessionData): Promise<UserSessionD
   ]), {
     scope
   });
-}
+};
 
-export function handleError(err: string | Error | any): any {
+export const handleError = (err: string | Error | any): any => {
   let error;
   if (typeof err == 'string') {
     error = errors[err] || errors.SYSTEM_ERROR;
@@ -69,19 +69,18 @@ export function handleError(err: string | Error | any): any {
     error = errors.SYSTEM_ERROR;
   }
   return error;
-}
+};
 
-function reduceUserScope(hrScope: HierarchicalScope, reducedUserScope: string[]) {
+const reduceUserScope = (hrScope: HierarchicalScope, reducedUserScope: string[]) => {
   reducedUserScope.push(hrScope.id);
   if (hrScope.children) {
     for (let childNode of hrScope.children) {
       reduceUserScope(childNode, reducedUserScope);
     }
   }
-}
+};
 
-function checkTargetScopeExists(hrScope: HierarchicalScope, targetScope: string,
-  reducedUserScope: string[]): boolean {
+const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string, reducedUserScope: string[]): boolean => {
   if (hrScope.id === targetScope) {
     // found the target scope object, iterate and put the orgs in reducedUserScope array
     logger.info(`Target entity match found in the user's hierarchical scope`);
@@ -95,10 +94,10 @@ function checkTargetScopeExists(hrScope: HierarchicalScope, targetScope: string,
     }
   }
   return false;
-}
+};
 
-function checkUserSubjectMatch(user: UserSessionData, ruleSubjectAttributes: Attribute[],
-  reducedUserScope?: string[]): boolean {
+const checkUserSubjectMatch = (user: UserSessionData, ruleSubjectAttributes: Attribute[],
+  reducedUserScope?: string[]): boolean => {
   // 1) Iterate through ruleSubjectAttributes and check if the roleScopingEntity URN and
   // role URN exists
   // 2) Now check if the subject rule role value matches with one of the users ctx role_associations
@@ -147,9 +146,8 @@ function checkUserSubjectMatch(user: UserSessionData, ruleSubjectAttributes: Att
             break;
           }
         }
-        if (userAssocHRScope &&
-          checkTargetScopeExists(userAssocHRScope, user.scope, reducedUserScope)) {
-            return true;
+        if (userAssocHRScope && checkTargetScopeExists(userAssocHRScope, user.scope, reducedUserScope)) {
+          return true;
         }
       }
     }
@@ -162,10 +160,98 @@ function checkUserSubjectMatch(user: UserSessionData, ruleSubjectAttributes: Att
     }
   }
   return false;
-}
+};
 
-export async function buildFilterPermissions(policySet: PolicySetRQ,
-  ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> {
+const validateCondition = (condition: string, request: any): boolean =>  {
+  return nodeEval(condition, 'condition.js', request);
+};
+
+const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
+  userTotalScope: string[], urns: any, condition?: string, context?: any, database?: string): QueryParams => {
+  const { subject, resources } = target;
+
+  const filter = [];
+  const query = {};
+  let filterId;
+
+  // if there is a condition add this to filter
+  if (condition && !_.isEmpty(condition)) {
+    condition = condition.replace(/\\n/g, '\n');
+    const request = { target, context };
+    try {
+      filterId = validateCondition(condition, request);
+      if (filterId) {
+        filter.push({
+          id: {
+            $eq: filterId
+          }
+        });
+      }
+    } catch (err) {
+      logger.info('Error caught evaluating condition:', { condition, err });
+    }
+  }
+  const scopingAttribute = _.find(subject, (attribute: Attribute) =>
+    attribute.id == urns.roleScopingEntity);
+  if (!!scopingAttribute && effect == Effect.PERMIT && !database) { // note: there is currently no query to exclude scopes
+    query['scope'] = {
+      custom_query: 'filterByOwnership',
+      custom_arguments: {
+        // value: Buffer.from(JSON.stringify({
+        entity: scopingAttribute.value,
+        instance: userTotalScope
+      }
+    };
+  } else if (database && database === 'postgres') {
+    query['filter'] = [];
+    for (let eachScope of userTotalScope) {
+      query['filter'].push({ field: 'orgKey', operation: 'eq', value: eachScope });
+    }
+  }
+
+  for (let attribute of resources) {
+    if (attribute.id == urns.resourceID) {
+      if (effect == Effect.PERMIT) {
+        filter.push({
+          id: {
+            $eq: attribute.value
+          }
+        });
+      } else {
+        filter.push({
+          id: {
+            $not: {
+              $eq: attribute.value
+            }
+          }
+        });
+      }
+      // add ID filter
+    } else if (attribute.id == urns.property) {
+      // add fields filter
+      if (!query['field']) {
+        query['field'] = [];
+      }
+      query['field'].push({
+        name: attribute.value.split('#')[1],
+        include: effect == Effect.PERMIT
+      });
+    }
+  }
+
+  const key = effect == Effect.PERMIT ? '$or' : '$and';
+  if (query['filter']) {
+    query['filter'] = Object.assign({}, query['filter'], { [key]: filter });
+  } else {
+    query['filter'] = {
+      [key]: filter
+    };
+  }
+  return query;
+};
+
+export const buildFilterPermissions = async(policySet: PolicySetRQ,
+  ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> => {
   const user = ctx.session.data as UserSessionData;
   const urns = cfg.get('authorization:urns');
   let query = {
@@ -287,98 +373,10 @@ export async function buildFilterPermissions(policySet: PolicySetRQ,
     return query;
   }
   return undefined;
-}
+};
 
 interface QueryParams {
   scope?: any;
   filter?: any;
   field?: any[];
-}
-
-function buildQueryFromTarget(target: AttributeTarget, effect: Effect,
-  userTotalScope: string[], urns: any, condition?: string, context?: any, database?: string): QueryParams {
-  const { subject, resources } = target;
-
-  const filter = [];
-  const query = {};
-  let filterId;
-
-  // if there is a condition add this to filter
-  if (condition && !_.isEmpty(condition)) {
-    condition = condition.replace(/\\n/g, '\n');
-    const request = { target, context };
-    try {
-      filterId = validateCondition(condition, request);
-      if (filterId) {
-        filter.push({
-          id: {
-            $eq: filterId
-          }
-        });
-      }
-    } catch (err) {
-      logger.info('Error caught evaluating condition:', { condition, err });
-    }
-  }
-  const scopingAttribute = _.find(subject, (attribute: Attribute) =>
-    attribute.id == urns.roleScopingEntity);
-  if (!!scopingAttribute && effect == Effect.PERMIT && !database) { // note: there is currently no query to exclude scopes
-    query['scope'] = {
-      custom_query: 'filterByOwnership',
-      custom_arguments: {
-        // value: Buffer.from(JSON.stringify({
-        entity: scopingAttribute.value,
-        instance: userTotalScope
-      }
-    };
-  } else if (database && database === 'postgres') {
-    query['filter'] = [];
-    for (let eachScope of userTotalScope) {
-      query['filter'].push({ field: 'orgKey', operation: 'eq', value: eachScope });
-    }
-  }
-
-  for (let attribute of resources) {
-    if (attribute.id == urns.resourceID) {
-      if (effect == Effect.PERMIT) {
-        filter.push({
-          id: {
-            $eq: attribute.value
-          }
-        });
-      } else {
-        filter.push({
-          id: {
-            $not: {
-              $eq: attribute.value
-            }
-          }
-        });
-      }
-      // add ID filter
-    } else if (attribute.id == urns.property) {
-      // add fields filter
-      if (!query['field']) {
-        query['field'] = [];
-      }
-      query['field'].push({
-        name: attribute.value.split('#')[1],
-        include: effect == Effect.PERMIT
-      });
-    }
-  }
-
-  const key = effect == Effect.PERMIT ? '$or' : '$and';
-  if (query['filter']) {
-    query['filter'] = Object.assign({}, query['filter'], { [key]: filter });
-  } else {
-    query['filter'] = {
-      [key]: filter
-    };
-  }
-  return query;
-}
-
-function validateCondition(condition: string, request: any): boolean {
-  return nodeEval(condition, 'condition.js', request);
 }
