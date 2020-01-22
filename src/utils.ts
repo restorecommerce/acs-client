@@ -202,7 +202,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
         instance: userTotalScope
       }
     };
-  } else if (database && database === 'postgres') {
+  } else if (database && database === 'postgres' && effect == Effect.PERMIT) {
     query['filter'] = [];
     for (let eachScope of userTotalScope) {
       query['filter'].push({ field: 'orgKey', operation: 'eq', value: eachScope });
@@ -242,7 +242,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   const key = effect == Effect.PERMIT ? '$or' : '$and';
   if (query['filter']) {
     query['filter'] = Object.assign({}, query['filter'], { [key]: filter });
-  } else {
+  } else if (!_.isEmpty(filter) || key == '$or' ) {
     query['filter'] = {
       [key]: filter
     };
@@ -300,7 +300,11 @@ export const buildFilterPermissions = async(policySet: PolicySetRQ,
             }
           }
           if (rule.effect == effect) {
-            policyFilters.push(buildQueryFromTarget(rule.target, effect, reducedUserScope, urns, rule.condition, ctx, database));
+            const filterPermissions = buildQueryFromTarget(rule.target, effect,
+              reducedUserScope, urns, rule.condition, ctx, database);
+            if (!_.isEmpty(filterPermissions)) {
+              policyFilters.push(filterPermissions);
+            }
           }
         }
         policyEffects.push(effect);

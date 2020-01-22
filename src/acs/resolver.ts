@@ -227,7 +227,7 @@ export const accessRequest = async(action: AuthZAction, request: Resource[] | Re
 
     // handle case if policySet is empty
     if (_.isEmpty(policySet)) {
-      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was INDETERMINATE`;
+      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name} for resource ${resourceName}; the response was INDETERMINATE`;
       logger.error(msg);
       throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
     }
@@ -235,7 +235,7 @@ export const accessRequest = async(action: AuthZAction, request: Resource[] | Re
     // extend input filter to enforce applicable policies
     const permissionArguments = await buildFilterPermissions(policySet, ctx, request.database);
     if (!permissionArguments) {
-      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was DENY`;
+      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name} for resource ${resourceName}; the response was DENY`;
       logger.error(msg);
       throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
     }
@@ -267,7 +267,7 @@ export const accessRequest = async(action: AuthZAction, request: Resource[] | Re
     decision = await isAllowed(ctx, action, resources);
 
     if (decision && decision != Decision.PERMIT) {
-      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name}; the response was ${decision}`;
+      const msg = `Access not allowed for a request from user ${(ctx.session.data as UserSessionData).name} for resource ${resources[0].type}; the response was ${decision}`;
       logger.error(msg);
       throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
     }
