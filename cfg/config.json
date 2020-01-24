@@ -1,4 +1,12 @@
 {
+  "logger": {
+    "console": {
+      "handleExceptions": false,
+      "level": "silly",
+      "colorize": true,
+      "prettyPrint": true
+    }
+  },
   "client": {
     "acs-srv": {
       "transports": {
@@ -77,6 +85,7 @@
   "authorization": {
     "service": "acs-srv",
     "enabled": true,
+    "enforced": true,
     "urns": {
       "entity": "urn:restorecommerce:acs:names:model:entity",
       "user": "urn:bmslsa:acs:model:user.User",
