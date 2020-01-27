@@ -188,7 +188,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
         });
       }
     } catch (err) {
-      logger.info('Error caught evaluating condition:', { condition, err });
+      logger.error('Error caught evaluating condition:', { condition, err });
     }
   }
   const scopingAttribute = _.find(subject, (attribute: Attribute) =>
