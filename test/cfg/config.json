@@ -1,0 +1,135 @@
+{
+    "logger": {
+      "console": {
+        "handleExceptions": false,
+        "level": "crit",
+        "colorize": true,
+        "prettyPrint": true
+      }
+    },
+    "client": {
+      "acs-srv": {
+        "transports": {
+          "grpc": {
+            "service": "io.restorecommerce.access_control.Service",
+            "protos": [
+              "io/restorecommerce/access_control.proto"
+            ],
+            "protoRoot": "protos/",
+            "timeout": 3000
+          }
+        },
+        "loadbalancer": {
+          "name": "roundRobin"
+        },
+        "publisher": {
+          "name": "static",
+          "instances": [
+            "grpc://localhost:50061"
+          ]
+        },
+        "endpoints": {
+          "isAllowed": {},
+          "whatIsAllowed": {}
+        }
+      },
+      "user": {
+        "transports": {
+          "grpc": {
+            "service": "io.restorecommerce.user.Service",
+            "protos": [
+              "io/restorecommerce/user.proto"
+            ],
+            "protoRoot": "protos/",
+            "timeout": 3000
+          }
+        },
+        "loadbalancer": {
+          "name": "roundRobin"
+        },
+        "publisher": {
+          "name": "static",
+          "instances": [
+            "grpc://localhost:50051"
+          ]
+        },
+        "endpoints": {
+          "login": {}
+        }
+      },
+      "graph-srv": {
+        "transports": {
+          "grpc": {
+            "service": "io.restorecommerce.graph.Service",
+            "protos": [
+              "io/restorecommerce/graph.proto"
+            ],
+            "protoRoot": "protos/",
+            "timeout": 3000
+          }
+        },
+        "loadbalancer": {
+          "name": "roundRobin"
+        },
+        "publisher": {
+          "name": "static",
+          "instances": [
+            "grpc://localhost:50053"
+          ]
+        },
+        "endpoints": {
+          "traversal": {}
+        }
+      }
+    },
+    "authorization": {
+      "service": "acs-srv",
+      "enabled": true,
+      "urns": {
+        "entity": "urn:restorecommerce:acs:names:model:entity",
+        "user": "urn:test:acs:model:user.User",
+        "model": "urn:test:acs:model",
+        "role": "urn:restorecommerce:acs:names:role",
+        "roleScopingEntity": "urn:restorecommerce:acs:names:roleScopingEntity",
+        "roleScopingInstance": "urn:restorecommerce:acs:names:roleScopingInstance",
+        "unauthenticated_user": "urn:restorecommerce:acs:names:unauthenticated-user",
+        "property": "urn:restorecommerce:acs:names:model:property",
+        "ownerIndicatoryEntity": "urn:restorecommerce:acs:names:ownerIndicatoryEntity",
+        "ownerInstance": "urn:restorecommerce:acs:names:ownerInstance",
+        "orgScope": "urn:test:acs:model:organization.Organization",
+        "subjectID": "urn:oasis:names:tc:xacml:1.0:subject:subject-id",
+        "resourceID": "urn:oasis:names:tc:xacml:1.0:resource:resource-id",
+        "actionID": "urn:oasis:names:tc:xacml:1.0:action:action-id",
+        "action": "urn:restorecommerce:acs:names:action",
+        "operation": "urn:restorecommerce:acs:names:operation",
+        "execute": "urn:restorecommerce:acs:names:action:execute",
+        "permitOverrides": "urn:oasis:names:tc:xacml:3.0:rule-combining-algorithm:permit-overrides",
+        "denyOverrides": "urn:oasis:names:tc:xacml:3.0:rule-combining-algorithm:deny-overrides",
+        "create": "urn:restorecommerce:acs:names:action:create",
+        "read": "urn:restorecommerce:acs:names:action:read",
+        "modify": "urn:restorecommerce:acs:names:action:modify",
+        "delete": "urn:restorecommerce:acs:names:action:delete",
+        "organization": "urn:test:acs:model:organization.Organization"
+      },
+      "hierarchicalResources": [
+        {
+          "collection": "organizations",
+          "edge": "org_has_parent_org"
+        }
+      ]
+    },
+    "errors": {
+      "INVALID_CREDENTIALS": {
+        "code": "001",
+        "message": "Invalid credentials"
+      },
+      "USER_NOT_LOGGED_IN": {
+        "code": "002",
+        "message": "User not logged in, please login first!"
+      },
+      "ACTION_NOT_ALLOWED": {
+        "code": "403",
+        "message": "Action not allowed on this resource"
+      }
+    }
+  }
