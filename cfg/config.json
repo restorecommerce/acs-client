@@ -2,7 +2,7 @@
   "logger": {
     "console": {
       "handleExceptions": false,
-      "level": "crit",
+      "level": "silly",
       "colorize": true,
       "prettyPrint": true
     }
@@ -15,7 +15,7 @@
           "protos": [
             "io/restorecommerce/access_control.proto"
           ],
-          "protoRoot": "test/protos/",
+          "protoRoot": "protos/",
           "timeout": 3000
         }
       },
@@ -40,7 +40,7 @@
           "protos": [
             "io/restorecommerce/user.proto"
           ],
-          "protoRoot": "test/protos/",
+          "protoRoot": "protos/",
           "timeout": 3000
         }
       },
@@ -64,7 +64,7 @@
           "protos": [
             "io/restorecommerce/graph.proto"
           ],
-          "protoRoot": "test/protos/",
+          "protoRoot": "protos/",
           "timeout": 3000
         }
       },
@@ -88,8 +88,8 @@
     "enforced": true,
     "urns": {
       "entity": "urn:restorecommerce:acs:names:model:entity",
-      "user": "urn:test:acs:model:user.User",
-      "model": "urn:test:acs:model",
+      "user": "urn:bmslsa:acs:model:user.User",
+      "model": "urn:bmslsa:acs:model",
       "role": "urn:restorecommerce:acs:names:role",
       "roleScopingEntity": "urn:restorecommerce:acs:names:roleScopingEntity",
       "roleScopingInstance": "urn:restorecommerce:acs:names:roleScopingInstance",
@@ -97,7 +97,7 @@
       "property": "urn:restorecommerce:acs:names:model:property",
       "ownerIndicatoryEntity": "urn:restorecommerce:acs:names:ownerIndicatoryEntity",
       "ownerInstance": "urn:restorecommerce:acs:names:ownerInstance",
-      "orgScope": "urn:test:acs:model:organization.Organization",
+      "orgScope": "urn:bmslsa:acs:model:organization.Organization",
       "subjectID": "urn:oasis:names:tc:xacml:1.0:subject:subject-id",
       "resourceID": "urn:oasis:names:tc:xacml:1.0:resource:resource-id",
       "actionID": "urn:oasis:names:tc:xacml:1.0:action:action-id",
@@ -110,7 +110,7 @@
       "read": "urn:restorecommerce:acs:names:action:read",
       "modify": "urn:restorecommerce:acs:names:action:modify",
       "delete": "urn:restorecommerce:acs:names:action:delete",
-      "organization": "urn:test:acs:model:organization.Organization"
+      "organization": "urn:bmslsa:acs:model:organization.Organization"
     },
     "hierarchicalResources": [
       {
@@ -127,10 +127,6 @@
     "USER_NOT_LOGGED_IN": {
       "code": "002",
       "message": "User not logged in, please login first!"
-    },
-    "ACTION_NOT_ALLOWED": {
-      "code": "403",
-      "message": "Action not allowed on this resource"
     }
   }
 }

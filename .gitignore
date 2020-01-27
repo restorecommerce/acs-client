@@ -4,8 +4,6 @@ npm-debug.log
 .project
 .settings
 .directory
-.vscode
-.nyc_output
 
 *.js
 *.d.ts
