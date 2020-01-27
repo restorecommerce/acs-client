@@ -247,7 +247,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     }
 
     if (_.isEmpty(policySet) && !authzEnforced) {
-      logger.debug(`The Access response was INDETERMIATE for a request from user ` +
+      logger.warn(`The Access response was INDETERMIATE for a request from user ` +
         `${(ctx.session.data as UserSessionData).name} for resource ${resourceName} ` +
         `as no matching policy/rule could be found, but since ACS enforcement ` +
         `config is disabled overriding the ACS result`);
@@ -265,7 +265,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     }
 
     if (!permissionArguments && !authzEnforced) {
-      logger.debug(`The Access response was DENY for a request from user ` +
+      logger.warn(`The Access response was DENY for a request from user ` +
         `${(ctx.session.data as UserSessionData).name} for resource ${resourceName} ` +
         `as user does not have access to target scope ${(ctx.session.data as UserSessionData).scope}, ` +
         `but since ACS enforcement config is disabled overriding the ACS result`);
@@ -320,10 +320,10 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     } else if (decision === Decision.DENY) {
       details = `User does not have access to requested target scope ${(ctx.session.data as UserSessionData).scope}`;
     }
-    logger.debug(`Access not allowed for a request from user ` +
+    logger.warn(`Access not allowed for a request from user ` +
       `${(ctx.session.data as UserSessionData).name} for resource ${resources[0].type}; ` +
       `the response was ${decision}`);
-    logger.debug(`${details}, Overriding the ACS result as ACS enforce config is disabled`);
+    logger.warn(`${details}, Overriding the ACS result as ACS enforce config is disabled`);
     decision = Decision.PERMIT;
   }
   return decision;

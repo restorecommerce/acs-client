@@ -83,7 +83,7 @@ const reduceUserScope = (hrScope: HierarchicalScope, reducedUserScope: string[])
 const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string, reducedUserScope: string[]): boolean => {
   if (hrScope.id === targetScope) {
     // found the target scope object, iterate and put the orgs in reducedUserScope array
-    logger.info(`Target entity match found in the user's hierarchical scope`);
+    logger.debug(`Target entity match found in the user's hierarchical scope`);
     reduceUserScope(hrScope, reducedUserScope);
     return true;
   } else if (hrScope.children) {
