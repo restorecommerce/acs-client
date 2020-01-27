@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "ES6",
     "module": "commonjs",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": true,
     "outDir": "lib",
     "typeRoots": [
       "node_modules/@types"
@@ -16,6 +17,7 @@
   ],
   "exclude": [
     "node_modules",
-    "lib"
+    "lib",
+    "doc"
   ]
 }
