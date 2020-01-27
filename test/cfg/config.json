@@ -15,7 +15,7 @@
           "protos": [
             "io/restorecommerce/access_control.proto"
           ],
-          "protoRoot": "test/protos/",
+          "protoRoot": "protos/",
           "timeout": 3000
         }
       },
@@ -40,7 +40,7 @@
           "protos": [
             "io/restorecommerce/user.proto"
           ],
-          "protoRoot": "test/protos/",
+          "protoRoot": "protos/",
           "timeout": 3000
         }
       },
@@ -64,7 +64,7 @@
           "protos": [
             "io/restorecommerce/graph.proto"
           ],
-          "protoRoot": "test/protos/",
+          "protoRoot": "protos/",
           "timeout": 3000
         }
       },
@@ -85,7 +85,6 @@
   "authorization": {
     "service": "acs-srv",
     "enabled": true,
-    "enforced": true,
     "urns": {
       "entity": "urn:restorecommerce:acs:names:model:entity",
       "user": "urn:test:acs:model:user.User",
