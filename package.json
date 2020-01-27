@@ -57,6 +57,6 @@
     "test": "npm run lint && nyc npm run mocha",
     "mocha": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --full-trace --exit",
     "test-debug": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --inspect-brk",
-    "postinstall": "tsc -d ./tsconfig.json"
+    "postinstall": "tsc -d"
   }
 }
