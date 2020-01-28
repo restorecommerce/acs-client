@@ -85,7 +85,7 @@
   "authorization": {
     "service": "acs-srv",
     "enabled": true,
-    "enforced": true,
+    "enforce": true,
     "urns": {
       "entity": "urn:restorecommerce:acs:names:model:entity",
       "user": "urn:test:acs:model:user.User",

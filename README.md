@@ -7,6 +7,8 @@
 [depend]: https://img.shields.io/david/restorecommerce/acs-client.svg?style=flat-square
 [cover]: http://img.shields.io/coveralls/restorecommerce/acs-client/master.svg?style=flat-square
 
+Features:
+
 - A generic client for the [access-control-srv](https://github.com/restorecommerce/access-control-srv).
 - It uses [grpc-client](https://github.com/restorecommerce/grpc-client) to access the exposed API via its gRPC interface.
 - This client constructs the [request](https://github.com/restorecommerce/acs-client/#api-client-interface) object expected by `access-control-srv` when requesting access to a particular [resource](https://github.com/restorecommerce/acs-client/#api-client-interface) with a specific action on it.
@@ -23,11 +25,18 @@ orgScope: 'urn:<organization>:acs:model:<Entity_Name>'
 
 ex: orgScope: 'urn:restorecommerce:acs:model:organization.Organization'
 
+The applicable policies / rules can be enforced on the request using [`enforce`](cfg/config.json#L88) configuration
+
 ## API
 
-The client exposes `accessRequest` API which constructs the request object and then invokes either the `isAllowed` or `whatISAllowed` operation depending on the `action` and returns the response either a `Decision` or `PolicySetRQ` respectively back to the caller.
+The client exposes the following api's:
 
-`RequestType`
+### accessRequest
+
+It turns an API request as can be found in typical Web frameworks like express, koa etc. into a proper ACS request. For write operations it uses [isAllowed](https://github.com/restorecommerce/access-control-srv#isallowed) and for read operations it uses [whatIsAllowed](https://github.com/restorecommerce/access-control-srv#whatisallowed) operation from [access-control-srv](https://github.com/restorecommerce/access-control-srv). 
+Requests are performed providing `Request` message as input and response is `Response` message type. For the read operations it extends the filter provided in the `ReadRequst` of the input message to enforce the applicapble poilicies. The response is `Decision` or policy set reverse query `PolicySetRQ` depending on the requeste operation `isAllowed()` or `whatIsAllowed()` respectively.
+
+`Request`
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
@@ -35,6 +44,13 @@ The client exposes `accessRequest` API which constructs the request object and t
 | request | `Resource` or `Resource [ ]` or `ReadRequest` | required | list of target resources or read request|
 | ctx | `Context` | required | context containing [user](https://github.com/restorecommerce/acs-client#user) details (ID and role-associations) |
  
+ `Response`
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| Decision | `Decision` | optional | Access decision; possible values are `PERMIT`, `DENY` or `INDETERMINATE` |
+| PolicySetRQ | `PolicySetRQ [ ]` | optional | List of applicable policy sets |
+
 `Resource`
 
 | Field | Type | Label | Description |
@@ -65,6 +81,35 @@ The client exposes `accessRequest` API which constructs the request object and t
 | ----- | ---- | ----- | ----------- |
 | policy_sets | [ ] [`io.restorecommerce.policy_set.PolicySetRQ`](https://github.com/restorecommerce/access-control-srv#whatisallowed) | required | List of applicable policy sets |
 
-## Tests
+### isAllowed
 
-// TODO
+This API exposes the [`isAllowed`](https://github.com/restorecommerce/access-control-srv#isallowed) api of `access-control-srv` and retruns the response as `Decision`.
+Requests are performed providing [`io.restorecommerce.access_control.Request`](https://github.com/restorecommerce/access-control-srv#isallowed) message as input and response is [`io.restorecommerce.access_control.Response`](https://github.com/restorecommerce/access-control-srv#isallowed) message.
+
+### whatIsAllowed
+
+This API exposes the [`isAllowed`](https://github.com/restorecommerce/access-control-srv#whatisallowed) api of `access-control-srv` and retruns the response as `Decision`. Requests are performed providing [`io.restorecommerce.access_control.Request`](https://github.com/restorecommerce/access-control-srv#whatisallowed) message as input and response is [`io.restorecommerce.access_control.ReverseQuery`](https://github.com/restorecommerce/access-control-srv#whatisallowed) message.
+
+## Usage
+
+For a simple example on how to use this client with a `access-control-srv` check the [test cases](https://github.com/restorecommerce/acs-client/tree/master/test).
+
+- Install dependencies
+
+```sh
+npm install
+```
+
+- Build
+
+```sh
+# compile the code
+npm run build
+```
+
+- Run tests
+
+```sh
+# run the tests
+npm run test
+```

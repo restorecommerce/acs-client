@@ -1,10 +1,9 @@
 import * as should from 'should';
-import { accessRequest, parseResourceList, ReadRequest, whatIsAllowedRequest } from '../lib/acs/resolver';
+import { accessRequest, parseResourceList, ReadRequest, isAllowed, whatIsAllowed } from '../lib/acs/resolver';
 import { createMockServer } from 'grpc-mock';
 import { AuthZAction, ACSContext, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/interfaces';
 import { initAuthZ, ACSAuthZ, UnAuthZ } from '../lib/acs/authz';
 import logger from '../lib/logger';
-import { isAllowedRequest } from '../lib/acs/resolver';
 import * as _ from 'lodash';
 
 let authZ: ACSAuthZ | UnAuthZ;
@@ -306,7 +305,7 @@ describe('testing acs-client', () => {
         stopGrpcMockServer();
       });
   });
-  describe('Test isAllowedRequest', () => {
+  describe('Test isAllowed', () => {
     it('Should DENY creating Test resource with unauthenticated context', async () => {
       startGrpcMockServer([{ method: 'isAllowed', input: '.*', output: { decision: 'DENY' } },
       { method: 'WhatIsAllowed', input: '.*', output: {} }]);
@@ -332,7 +331,7 @@ describe('testing acs-client', () => {
       // update authZ(client connection object) object in ctx - this 
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
-      const response = await isAllowedRequest(isAllowedReqUnauth, ctx);
+      const response = await isAllowed(isAllowedReqUnauth, ctx);
       should.exist(response);
       response.should.equal('DENY');
       stopGrpcMockServer();
@@ -371,13 +370,13 @@ describe('testing acs-client', () => {
       // update authZ(client connection object) object in ctx - this 
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
-      const response = await isAllowedRequest(isAllowedReqAuth, ctx);;
+      const response = await isAllowed(isAllowedReqAuth, ctx);;
       should.exist(response);
       response.should.equal('PERMIT');
       stopGrpcMockServer();
     });
   });
-  describe('Test whatIsAllowedRequest', () => {
+  describe('Test whatIsAllowed', () => {
     it('Should return applicable policy set for read operation', async () => {
       // PolicySet contains DENY rule
       policySetRQ.policy_sets[0].policies[0].rules[0] = permitRule;
@@ -415,7 +414,7 @@ describe('testing acs-client', () => {
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
       // call accessRequest(), the response is from mock ACS
-      const policySetRQResponse = await whatIsAllowedRequest(whatIsAllowedReqAuth, ctx);
+      const policySetRQResponse = await whatIsAllowed(whatIsAllowedReqAuth, ctx);
       should.exist(policySetRQResponse);
       policySetRQResponse.id.should.equal('test_policy_set_id');
       policySetRQResponse.policies.length.should.equal(1);

@@ -17,7 +17,7 @@ const contextIsUnauthenticated = (object: any): object is UnauthenticatedContext
     && 'unauthenticated' in object['session']['data'] && object['session']['data']['unauthenticated'];
 };
 
-const whatIsAllowed = async (ctx: ACSContext, action: AuthZAction[], resources: Resource[]) => {
+const whatIsAllowedRequest = async (ctx: ACSContext, action: AuthZAction[], resources: Resource[]) => {
   if (contextIsUnauthenticated(ctx)) {
     const grpcConfig = cfg.get('client:acs-srv');
     const acsClient = new Client(grpcConfig, logger);
@@ -57,7 +57,7 @@ const isReadRequest = (object: any): object is ReadRequest => {
   return 'entity' in object;
 };
 
-export const isAllowed = async (ctx: ACSContext, action: AuthZAction, resources: Resource[]): Promise<Decision> => {
+export const isAllowedRequest = async (ctx: ACSContext, action: AuthZAction, resources: Resource[]): Promise<Decision> => {
   if (contextIsUnauthenticated(ctx)) {
     const grpcConfig = cfg.get('client:acs-srv');
     const acsClient = new Client(grpcConfig, logger);
@@ -179,7 +179,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
-      return await whatIsAllowed(ctx as ACSContext, [action], [{
+      return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
         type: (request as ReadRequest).entity,
         namespace: (request as ReadRequest).namespace
       }]);
@@ -201,7 +201,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
-      return await whatIsAllowed(ctx as ACSContext, [action], [{
+      return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
         type: (request as ReadRequest).entity,
         namespace: (request as ReadRequest).namespace
       }]);
@@ -226,7 +226,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     try {
       // retrieving set of applicable policies/rules from ACS
       // Note: it is assumed that there is only one policy set
-      policySet = await whatIsAllowed(ctx as ACSContext, [action], [{
+      policySet = await whatIsAllowedRequest(ctx as ACSContext, [action], [{
         type: resourceName,
         namespace: (request as ReadRequest).namespace
       }]);
@@ -296,7 +296,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
   // for write operations
   if (!_.isEmpty(resources) || action == AuthZAction.DELETE) {
     // authorization
-    decision = await isAllowed(ctx, action, resources);
+    decision = await isAllowedRequest(ctx, action, resources);
 
     if (decision && decision != Decision.PERMIT && authzEnforced) {
       let details = '';
@@ -367,7 +367,7 @@ export const parseResourceList = (resourceList: Array<any>, action: AuthZAction,
  * @param {ACSContext} ctx Context Object containing requester's subject information
  * @return {Decision} PERMIT or DENY or INDETERMINATE
  */
-export const isAllowedRequest = async (request: ACSRequest,
+export const isAllowed = async (request: ACSRequest,
   ctx: ACSContext): Promise<Decision> => {
   const response = await ctx.authZ.acs.isAllowed(request);
 
@@ -393,7 +393,7 @@ export const isAllowedRequest = async (request: ACSRequest,
  * @param {ACSContext} ctx Context Object containing requester's subject information
  * @return {PolicySetRQ} set of applicalbe policies and rules for the input request
  */
-export const whatIsAllowedRequest = async (request: ACSRequest,
+export const whatIsAllowed = async (request: ACSRequest,
   ctx: ACSContext): Promise<PolicySetRQ> => {
   const response = await ctx.authZ.acs.whatIsAllowed(request);
   if (_.isEmpty(response) || _.isEmpty(response.data)) {
