@@ -11,17 +11,17 @@ Features:
 
 - A generic client for the [access-control-srv](https://github.com/restorecommerce/access-control-srv).
 - It uses [grpc-client](https://github.com/restorecommerce/grpc-client) to access the exposed API via its gRPC interface.
-- This client constructs the [request](https://github.com/restorecommerce/acs-client/#api-client-interface) object expected by `access-control-srv` when requesting access to a particular [resource](https://github.com/restorecommerce/acs-client/#api-client-interface) with a specific action on it.
+- This client constructs the [request](https://github.com/restorecommerce/acs-client/#api-client-interface) object expected by `access-control-srv` when requesting access to a particular [resource](https://github.com/restorecommerce/acs-client/tree/acs-tests#accessrequest) with a specific action on it.
 - This client supports access request for both methods [isAllowed](https://github.com/restorecommerce/access-control-srv#isallowed) and [whatIsAllowed](https://github.com/restorecommerce/access-control-srv#whatisallowed) exposed by `access-control-srv`.
 - It evaluates the [condition](https://github.com/restorecommerce/access-control-srv#rule) for `whatIsAllowed` requests.
 - It returns the decision made by the ACS.
 
 ## Configuration
 
-The `access-control-srv` [URN configurations](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#urn-reference) needs to be set using [authorization](cfg/config.json#L77) configuration to `acs-client` from access requesting microservice.
+The `access-control-srv` [URN configurations](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#urn-reference) needs to be set using [authorization](cfg/config.json#L85) configuration to `acs-client` from access requesting microservice.
 The URN for [role scoping entity](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#role-scoping) for Organization/ business units should be set using configuration property `authorization.urns.orgScope`.
 
-orgScope: 'urn:<organization>:acs:model:<Entity_Name>'
+orgScope: 'urn:\<organization\>:acs:model:<Entity_Name>'
 
 ex: orgScope: 'urn:restorecommerce:acs:model:organization.Organization'
 
@@ -92,7 +92,7 @@ This API exposes the [`isAllowed`](https://github.com/restorecommerce/access-con
 
 ## Usage
 
-For a simple example on how to use this client with a `access-control-srv` check the [test cases](https://github.com/restorecommerce/acs-client/tree/master/test).
+For a simple example on how to use this client with a `access-control-srv` check the [test cases](https://github.com/restorecommerce/acs-client/blob/acs-tests/test/acs_test.ts).
 
 - Install dependencies
 
