@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import {
   ACSContext, UserSessionData, PolicySetRQ,
-  UnauthenticatedContext, Resource, Decision
+  UnauthenticatedContext, Resource, Decision, ACSRequest
 } from './interfaces';
 import { AuthZAction } from './interfaces';
 import logger from '../logger';
@@ -358,6 +358,53 @@ export const parseResourceList = (resourceList: Array<any>, action: AuthZAction,
       namespace: resourceNamespace
     };
   });
+};
+
+/**
+ * Exposes the isAllowed() api of `access-control-srv` and retruns the response
+ * as `Decision`.
+ * @param {ACSRequest} request input authorization request
+ * @param {ACSContext} ctx Context Object containing requester's subject information
+ * @return {Decision} PERMIT or DENY or INDETERMINATE
+ */
+export const isAllowedRequest = async (request: ACSRequest,
+  ctx: ACSContext): Promise<Decision> => {
+  const response = await ctx.authZ.acs.isAllowed(request);
+
+  if (_.isEmpty(response) || _.isEmpty(response.data)) {
+    console.log(response.error);
+    logger.error('Unexpected empty response from ACS');
+  } else if (response.data.decision) {
+    return response.data.decision;
+  }
+
+  if (response.error) {
+    logger.verbose('Error while requesting authorization to ACS...', { error: response.error.message });
+    throw new Error('Error while requesting authorization to ACS');
+  }
+
+  return Decision.DENY;
+};
+
+/**
+ * Exposes the whatIsAllowed() api of `access-control-srv` and retruns the response
+ * a policy set reverse query `PolicySetRQ`
+ * @param {ACSRequest} authZRequest input authorization request
+ * @param {ACSContext} ctx Context Object containing requester's subject information
+ * @return {PolicySetRQ} set of applicalbe policies and rules for the input request
+ */
+export const whatIsAllowedRequest = async (request: ACSRequest,
+  ctx: ACSContext): Promise<PolicySetRQ> => {
+  const response = await ctx.authZ.acs.whatIsAllowed(request);
+  if (_.isEmpty(response) || _.isEmpty(response.data)) {
+    logger.error('Unexpected empty response from ACS');
+  }
+
+  if (response.error) {
+    logger.verbose('Error while requesting authorization to ACS...', { error: response.error.message });
+    throw new Error('Error while requesting authorization to ACS');
+  }
+  return (response.data.policy_sets || []).length > 0 ? response.data.policy_sets[0] : {};
 };
 
 export interface Output {

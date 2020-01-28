@@ -197,3 +197,20 @@ export enum Effect {
   DENY = 'DENY',
   INDETERMINATE = 'INDETERMINATE'
 }
+
+export interface ACSRequest {
+  target: TargetReq;
+  context: Context;
+}
+
+export interface TargetReq {
+  subject: Attribute[];
+  resources: Attribute[];
+  action: Attribute[];
+}
+
+export interface Context {
+  subject: any;
+  resources: any[];
+  security: any;
+}

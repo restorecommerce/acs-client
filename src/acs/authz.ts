@@ -156,7 +156,7 @@ export class UnAuthZ implements IAuthZ {
     const response = await this.acs.isAllowed(authZRequest);
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
-      console.log(response.error);
+      logger.error(response.error);
       logger.error('Unexpected empty response from ACS');
     } else if (response.data.decision) {
       return response.data.decision;
@@ -254,7 +254,7 @@ export class ACSAuthZ implements IAuthZ {
     const response = await this.acs.isAllowed(authZRequest);
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
-      console.log(response.error);
+      logger.error(response.error);
       logger.error('Unexpected empty response from ACS');
     } else if (response.data.decision) {
       return response.data.decision;
