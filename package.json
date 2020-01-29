@@ -1,5 +1,5 @@
 {
-  "name": "acs-client",
+  "name": "@restorecommerce/acs-client",
   "version": "0.0.1",
   "description": "Access Control Service Client",
   "private": true,
