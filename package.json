@@ -18,8 +18,8 @@
   ],
   "main": "./lib/index.js",
   "dependencies": {
-    "@restorecommerce/grpc-client": "^0.0.1",
-    "@restorecommerce/logger": "^0.1.10",
+    "@restorecommerce/grpc-client": "^0.0.5",
+    "@restorecommerce/logger": "^0.1.12",
     "@restorecommerce/service-config": "^0.1.4",
     "lodash": "^4.17.15",
     "node-eval": "^2.0.0"
@@ -52,11 +52,10 @@
     "build:clean": "rimraf lib",
     "build": "npm-run-all lint build:clean build:tsc",
     "lint": "eslint src --ext .ts",
-    "pretest": "npm run tsctests",
+    "pretest": "npm run build && npm run tsctests",
     "tsctests": "tsc -d -p tsconfig.test.json",
     "test": "npm run lint && nyc npm run mocha",
     "mocha": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --full-trace --exit",
-    "test-debug": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --inspect-brk",
-    "postinstall": "tsc -d"
+    "test-debug": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --inspect-brk"
   }
 }

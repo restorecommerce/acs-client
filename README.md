@@ -95,6 +95,12 @@ This API exposes the [`isAllowed`](https://github.com/restorecommerce/access-con
 ### Tests
 For a simple example on how to use this client with a `access-control-srv` check the [test cases](https://github.com/restorecommerce/acs-client/blob/acs-tests/test/acs_test.ts).
 
+- Run tests
+
+```sh
+npm run test
+```
+
 ## Usage
 
 - Install dependencies
