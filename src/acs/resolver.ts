@@ -176,7 +176,8 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     && (ctx as any).req.headers['authorization']
     && (ctx as any).req.headers['expected-authorization']
     && (ctx as any).req.headers['authorization'] === (ctx as any).req.headers['expected-authorization']) {
-    if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
+    if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
+      action === AuthZAction.DELETE|| action === AuthZAction.EXECUTE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
       return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
@@ -198,7 +199,8 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
   // if authorization is disabled
   if (!authzEnabled) {
     // if action is write
-    if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY || AuthZAction.DELETE) {
+    if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
+      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
       return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
@@ -294,7 +296,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
   // default deny
   let decision: Decision = Decision.DENY;
   // for write operations
-  if (!_.isEmpty(resources) || action == AuthZAction.DELETE) {
+  if (!_.isEmpty(resources) || action == AuthZAction.DELETE || action == AuthZAction.EXECUTE) {
     // authorization
     decision = await isAllowedRequest(ctx, action, resources);
 

@@ -7,7 +7,7 @@ import {
   HierarchicalScope, Request, Resource, Decision
 } from './interfaces';
 import { Client, toStruct } from '@restorecommerce/grpc-client';
-import { cfg } from '../config';
+import { cfg, updateConfig } from '../config';
 import logger from '../logger';
 
 export declare type Authorizer = ACSAuthZ;
@@ -440,8 +440,11 @@ export class ACSAuthZ implements IAuthZ {
   }
 }
 
-export const initAuthZ = async (): Promise<void> => {
+export const initAuthZ = async (config?: any): Promise<void | ACSAuthZ> => {
   if (!authZ) {
+    if (config) {
+      updateConfig(config);
+    }
     const authzCfg = cfg.get('authorization');
     // gRPC interface for access-control-srv
     if (authzCfg.enabled) {
@@ -449,6 +452,7 @@ export const initAuthZ = async (): Promise<void> => {
       const client = new Client(grpcConfig, logger);
       const acs = await client.connect();
       authZ = new ACSAuthZ(acs);
+      return authZ;
     }
   }
 };
