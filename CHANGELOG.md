@@ -1,3 +1,7 @@
+### 0.0.3 (February 5th, 2020)
+
+- fix for api key mode for read operation
+
 ### 0.0.2 (February 5th, 2020)
 
 - modified initAuthZ for providing config

@@ -180,10 +180,8 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
       action === AuthZAction.DELETE|| action === AuthZAction.EXECUTE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
-      return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
-        type: (request as ReadRequest).entity,
-        namespace: (request as ReadRequest).namespace
-      }]);
+      // for apiKey mode return PERMIT
+      return Decision.PERMIT;
     }
   }
   let authzEnabled = cfg.get('authorization:enabled');
