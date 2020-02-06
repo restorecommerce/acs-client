@@ -1,6 +1,6 @@
 import {cfg} from '../config';
 import logger from '../logger';
-import * as crypto from "crypto";
+import * as crypto from 'crypto';
 
 let attempted = false;
 let redisInstance;
@@ -30,12 +30,12 @@ let initRedis = async () => {
 
       redisClient.ping((err: Error | null, reply: string) => {
         if (err) {
-          logger.error("Failed to connect to ACS cache: ", err);
+          logger.error('Failed to connect to ACS cache: ', err);
           return;
         }
 
         if (reply === 'PONG') {
-          logger.info("ACS Connected to cache");
+          logger.info('ACS Connected to cache');
           redisInstance = redisClient;
         }
       });
@@ -46,7 +46,7 @@ let initRedis = async () => {
 initRedis();
 
 
-export async function getOrFill<T, M>(keyData: T, filler: (data: T) => Promise<M>, prefix?: string): Promise<M | undefined> {
+export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M>, prefix?: string): Promise<M | undefined> => {
   if (!redisInstance) {
     return filler(keyData);
   }
@@ -61,7 +61,7 @@ export async function getOrFill<T, M>(keyData: T, filler: (data: T) => Promise<M
   return new Promise((resolve, reject) => {
     redisInstance.get(redisKey, async (err, reply) => {
       if (err) {
-        logger.error("Failed fetching key from ACS cache: ", err);
+        logger.error('Failed fetching key from ACS cache: ', err);
         return;
       }
 
@@ -81,9 +81,9 @@ export async function getOrFill<T, M>(keyData: T, filler: (data: T) => Promise<M
       }).catch(reject);
     });
   });
-}
+};
 
-export async function flushCache() {
+export const flushCache = async () => {
   if (!redisInstance) {
     return;
   }
@@ -93,7 +93,7 @@ export async function flushCache() {
   return new Promise((resolve, reject) => {
     redisInstance.flushdb(async (err, reply) => {
       if (err) {
-        logger.error("Failed flushing ACS cache: ", err);
+        logger.error('Failed flushing ACS cache: ', err);
         return reject();
       }
 
@@ -103,4 +103,4 @@ export async function flushCache() {
       }
     });
   });
-}
+};
