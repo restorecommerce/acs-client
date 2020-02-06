@@ -46,8 +46,12 @@
     "ts-node": "^8.3.0",
     "typescript": "^3.6.3"
   },
+  "optionalDependencies": {
+    "redis": "^2.8.0"
+  },
   "scripts": {
     "build:tsc": "tsc -d",
+    "build:tsc:watch": "tsc -d --watch",
     "build:clean": "rimraf lib",
     "build": "npm-run-all lint build:clean build:tsc",
     "lint": "eslint src --ext .ts",

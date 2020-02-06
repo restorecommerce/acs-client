@@ -1,5 +1,6 @@
 import * as should from 'should';
 import { accessRequest, parseResourceList, ReadRequest, isAllowed, whatIsAllowed } from '../lib/acs/resolver';
+import { flushCache } from '../lib/acs/cache';
 import { createMockServer } from 'grpc-mock';
 import { AuthZAction, ACSContext, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/interfaces';
 import { initAuthZ, ACSAuthZ, UnAuthZ } from '../lib/acs/authz';
@@ -149,6 +150,10 @@ describe('testing acs-client', () => {
     await stop();
   });
 
+  afterEach(async function flush() {
+    await flushCache();
+  });
+
   describe('Test accessRequest', () => {
     it('Should DENY creating Test resource with unauthenticated context', async () => {
       startGrpcMockServer([{ method: 'IsAllowed', input: '.*', output: { decision: 'DENY' } },
@@ -170,7 +175,7 @@ describe('testing acs-client', () => {
           }
         }
       }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this 
+      // update authZ(client connection object) object in ctx - this
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
       // convert data and call accessRequest(), the response is from mock ACS
@@ -214,7 +219,7 @@ describe('testing acs-client', () => {
           }
         }
       }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this 
+      // update authZ(client connection object) object in ctx - this
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
       // convert data and call accessRequest(), the response is from mock ACS
@@ -250,7 +255,7 @@ describe('testing acs-client', () => {
           }
         }
       }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this 
+      // update authZ(client connection object) object in ctx - this
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
       // call accessRequest(), the response is from mock ACS
@@ -294,7 +299,7 @@ describe('testing acs-client', () => {
             }
           }
         }) as ACSContext;
-        // update authZ(client connection object) object in ctx - this 
+        // update authZ(client connection object) object in ctx - this
         // is done via middleware in the calling application
         ctx = Object.assign({}, ctx, authZ);
         // call accessRequest(), the response is from mock ACS
@@ -328,7 +333,7 @@ describe('testing acs-client', () => {
           }
         }
       }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this 
+      // update authZ(client connection object) object in ctx - this
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
       const response = await isAllowed(isAllowedReqUnauth, ctx);
@@ -367,7 +372,7 @@ describe('testing acs-client', () => {
           }
         }
       }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this 
+      // update authZ(client connection object) object in ctx - this
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
       const response = await isAllowed(isAllowedReqAuth, ctx);;
@@ -410,7 +415,7 @@ describe('testing acs-client', () => {
           }
         }
       }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this 
+      // update authZ(client connection object) object in ctx - this
       // is done via middleware in the calling application
       ctx = Object.assign({}, ctx, authZ);
       // call accessRequest(), the response is from mock ACS

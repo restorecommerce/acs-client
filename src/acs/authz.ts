@@ -9,6 +9,7 @@ import {
 import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { cfg, updateConfig } from '../config';
 import logger from '../logger';
+import { getOrFill } from './cache';
 
 export declare type Authorizer = ACSAuthZ;
 export let authZ: Authorizer;
@@ -153,7 +154,9 @@ export class UnAuthZ implements IAuthZ {
       context: request.context
     };
 
-    const response = await this.acs.isAllowed(authZRequest);
+    const response = await getOrFill(authZRequest, async (req) => {
+      return this.acs.isAllowed(authZRequest);
+    }, 'UnAuthZ:isAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error(response.error);
@@ -180,7 +183,10 @@ export class UnAuthZ implements IAuthZ {
       context: request.context
     };
 
-    const response = await this.acs.whatIsAllowed(authZRequest);
+    const response = await getOrFill(authZRequest, async (req) => {
+      return this.acs.whatIsAllowed(authZRequest);
+    }, 'UnAuthZ:whatIsAllowed');
+
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error('Unexpected empty response from ACS');
     }
@@ -228,11 +234,15 @@ export class ACSAuthZ implements IAuthZ {
     }
 
     if (request.target.action == 'MODIFY' || request.target.action == 'DELETE') {
-      resources = await this.getResourcesWithMetadata(resources);
+      resources = await getOrFill(resources, async (res) => {
+        return this.getResourcesWithMetadata(resources);
+      }, 'ACSAuthZ:getResourcesWithMetadata');
     }
 
     if (!hierarchicalScope) {
-      hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
+      hierarchicalScope = await getOrFill(subject.role_associations, async (role_associations) => {
+        return this.createHierarchicalScopeTrees(subject.role_associations);
+      }, 'ACSAuthZ:createHierarchicalScopeTrees');
     }
     authZRequest.context.subject = this.encode(_.merge(subject, {
       hierarchical_scope: hierarchicalScope
@@ -251,7 +261,9 @@ export class ACSAuthZ implements IAuthZ {
     }
     authZRequest.context.resources = this.encode(resources);
 
-    const response = await this.acs.isAllowed(authZRequest);
+    const response = await getOrFill(authZRequest, async (req) => {
+      return this.acs.isAllowed(authZRequest);
+    }, 'ACSAuthZ:isAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error(response.error);
@@ -355,14 +367,19 @@ export class ACSAuthZ implements IAuthZ {
 
 
     if (!hierarchicalScope) {
-      hierarchicalScope = await this.createHierarchicalScopeTrees(subject.role_associations);
+      hierarchicalScope = await getOrFill(subject.role_associations, async (role_associations) => {
+        return this.createHierarchicalScopeTrees(subject.role_associations);
+      }, 'ACSAuthZ:createHierarchicalScopeTrees');
     }
     authZRequest.context.subject = this.encode(_.merge(subject, {
       hierarchical_scope: hierarchicalScope
     }));
     authZRequest.context.resources = this.encode(resources);
 
-    const response = await this.acs.whatIsAllowed(authZRequest);
+    const response = await getOrFill(authZRequest, async (req) => {
+      return this.acs.whatIsAllowed(authZRequest);
+    }, 'ACSAuthZ:whatIsAllowed');
+
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error('Unexpected empty response from ACS');
     }
