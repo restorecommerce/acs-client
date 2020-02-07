@@ -6,9 +6,10 @@ let attempted = false;
 let redisInstance;
 let ttl: number | undefined;
 let globalPrefix: string | undefined;
+let cacheEnabled = true;
 
-let initRedis = async () => {
-  if (attempted) {
+let initializeCache = async () => {
+  if (attempted || !cacheEnabled) {
     return;
   }
 
@@ -49,7 +50,7 @@ let initRedis = async () => {
   }
 };
 
-initRedis();
+initializeCache();
 
 /**
  * Find the object in cache. If not found, compute it using the filler function
@@ -59,7 +60,7 @@ initRedis();
  * @param prefix The prefix to apply to the object key in the cache
  */
 export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M>, prefix?: string): Promise<M | undefined> => {
-  if (!redisInstance) {
+  if (!redisInstance || !cacheEnabled) {
     return filler(keyData);
   }
 
@@ -101,7 +102,7 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
  * @param prefix An optional prefix to flush instead of entire cache
  */
 export const flushCache = async (prefix?: string) => {
-  if (!redisInstance) {
+  if (!redisInstance || !cacheEnabled) {
     return;
   }
 
@@ -150,4 +151,20 @@ export const flushCache = async (prefix?: string) => {
       }
     });
   });
+};
+
+/**
+ * Enable / Disable ACS Caching
+ *
+ * @param enabled Whether to enable or disable the cache
+ */
+export const setCacheStatus = (enabled: boolean) => {
+  cacheEnabled = enabled;
+
+  if (enabled) {
+    logger.debug('ACS Cache Enabled');
+    initializeCache();
+  } else {
+    logger.debug('ACS Cache Disabled');
+  }
 };

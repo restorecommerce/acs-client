@@ -57,8 +57,9 @@
     "lint": "eslint src --ext .ts",
     "pretest": "npm run build && npm run tsctests",
     "tsctests": "tsc -d -p tsconfig.test.json",
-    "test": "npm run lint && nyc npm run mocha",
+    "test": "npm run lint && nyc npm run mocha && nyc npm run mocha:cache",
     "mocha": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --full-trace --exit",
+    "mocha:cache": "cross-env NODE_ENV=test CACHE_ENABLED=true mocha -R spec ./test/*.js --full-trace --exit",
     "test-debug": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --inspect-brk"
   }
 }

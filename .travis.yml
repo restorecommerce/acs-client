@@ -7,10 +7,21 @@ node_js:
     - "12.14"
 git:
   depth: 10
+
+services:
+  - docker
+
 before_install:
   - sudo apt-get update
+  - sudo apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y docker-ce
   - 'npm install -g typescript'
   - 'npm install -g tslint'
+  - docker network create --driver bridge resource_net
+  - docker run --name resource_redis -d --net=resource_net -p 127.0.0.1:6379:6379 redis:5.0.3-alpine
+  - sleep 10
+  - docker ps -a
+  - docker logs resource_redis
+
 after_success:
   - 'npm run coveralls'
   - 'cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js'

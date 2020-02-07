@@ -1,6 +1,6 @@
 import * as should from 'should';
 import { accessRequest, parseResourceList, ReadRequest, isAllowed, whatIsAllowed } from '../lib/acs/resolver';
-import { flushCache } from '../lib/acs/cache';
+import { flushCache, setCacheStatus } from '../lib/acs/cache';
 import { createMockServer } from 'grpc-mock';
 import { AuthZAction, ACSContext, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/interfaces';
 import { initAuthZ, ACSAuthZ, UnAuthZ } from '../lib/acs/authz';
@@ -143,6 +143,8 @@ async function stop(): Promise<void> {
 
 describe('testing acs-client', () => {
   before(async function startServer(): Promise<void> {
+    const cacheEnabled = process.env.CACHE_ENABLED;
+    setCacheStatus(cacheEnabled && cacheEnabled.toLowerCase() === 'true');
     await start();
   });
 
