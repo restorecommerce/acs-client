@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 let attempted = false;
 let redisInstance;
 let ttl: number | undefined;
+let globalPrefix: string | undefined;
 
 let initRedis = async () => {
   if (attempted) {
@@ -27,6 +28,11 @@ let initRedis = async () => {
       redisConfig.db = cfg.get('authorization:cache:db-index');
       let redisClient = redis.createClient(redisConfig);
       ttl = cfg.get('authorization:cache:ttl');
+      globalPrefix = cfg.get('authorization:cache:prefix');
+
+      redisClient.on("error", function (err) {
+        logger.error("Cache Error: ", err);
+      });
 
       redisClient.ping((err: Error | null, reply: string) => {
         if (err) {
@@ -45,7 +51,13 @@ let initRedis = async () => {
 
 initRedis();
 
-
+/**
+ * Find the object in cache. If not found, compute it using the filler function
+ *
+ * @param keyData The data to base the cache key on
+ * @param filler The function to execute if key is not found in cache
+ * @param prefix The prefix to apply to the object key in the cache
+ */
 export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M>, prefix?: string): Promise<M | undefined> => {
   if (!redisInstance) {
     return filler(keyData);
@@ -83,9 +95,44 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
   });
 };
 
-export const flushCache = async () => {
+/**
+ * Flush the ACS cache
+ *
+ * @param prefix An optional prefix to flush instead of entire cache
+ */
+export const flushCache = async (prefix?: string) => {
   if (!redisInstance) {
     return;
+  }
+
+  if (prefix != undefined) {
+    let flushPrefix = globalPrefix + prefix + '*';
+
+    logger.debug('Flushing ACS cache prefix: ' + flushPrefix);
+
+    return new Promise((resolve, reject) => {
+      redisInstance.scan('0', 'MATCH', flushPrefix, (err, reply) => {
+        if (err) {
+          logger.error('Failed flushing ACS cache prefix: ', err);
+          return reject();
+        }
+
+        if (reply.length >= 2 && reply[1].length > 0) {
+          const cleaned = reply[1].map(key => globalPrefix ? key.substr(globalPrefix.length) : key);
+          return redisInstance.del(cleaned, (err1, reply1) => {
+            if (err1) {
+              logger.error('Failed flushing ACS cache prefix: ', err1);
+              return reject();
+            }
+
+            logger.debug('Flushed ACS cache prefix: ' + flushPrefix);
+            return resolve();
+          });
+        }
+
+        resolve();
+      });
+    });
   }
 
   logger.debug('Flushing ACS cache');

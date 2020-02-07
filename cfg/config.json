@@ -117,7 +117,14 @@
         "collection": "organizations",
         "edge": "org_has_parent_org"
       }
-    ]
+    ],
+    "cache":  {
+      "host": "localhost",
+      "port": 6379,
+      "db-index": 5,
+      "ttl": 3600,
+      "prefix": "acs:"
+    }
   },
   "errors": {
     "INVALID_CREDENTIALS": {

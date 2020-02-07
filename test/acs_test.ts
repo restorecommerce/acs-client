@@ -62,7 +62,7 @@ const unauthenticatedSubject = [
 const authenticatedSubject = [
   { // authenticated user
     id: "urn:oasis:names:tc:xacml:1.0:subject:subject-id",
-    value: "test_id"
+    value: "test_user_id"
   },
   {
     id: "urn:restorecommerce:acs:names:roleScopingEntity",
@@ -148,10 +148,11 @@ describe('testing acs-client', () => {
 
   after(async function stopServer(): Promise<void> {
     await stop();
+    await flushCache();
   });
 
-  afterEach(async function flush() {
-    await flushCache();
+  beforeEach(async function flush() {
+    await flushCache('test_user_id:');
   });
 
   describe('Test accessRequest', () => {
@@ -169,7 +170,7 @@ describe('testing acs-client', () => {
       let ctx = ({
         session: {
           data: {
-            name: 'test',
+            name: 'test_user',
             scope: 'targetScope',
             unauthenticated: true
           }
@@ -191,7 +192,7 @@ describe('testing acs-client', () => {
       should.exist(error);
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
-      error.details.should.equal('Access not allowed for a request from user test for resource Test; the response was DENY');
+      error.details.should.equal('Access not allowed for a request from user test_user for resource Test; the response was DENY');
       error.code.should.equal('403');
       stopGrpcMockServer();
     });
@@ -208,8 +209,8 @@ describe('testing acs-client', () => {
       let ctx = ({
         session: {
           data: {
-            id: 'test_id',
-            name: 'test',
+            id: 'test_user_id',
+            name: 'test_user',
             scope: 'targetScope',
             role_associations: [
               {
@@ -244,8 +245,8 @@ describe('testing acs-client', () => {
       let ctx = ({
         session: {
           data: {
-            id: 'test_id',
-            name: 'test',
+            id: 'test_user_id',
+            name: 'test_user',
             scope: 'targetScope',
             role_associations: [
               {
@@ -268,7 +269,7 @@ describe('testing acs-client', () => {
       should.exist(error);
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
-      error.details.should.equal('Access not allowed for a request from user test for resource Test; the response was DENY');
+      error.details.should.equal('Access not allowed for a request from user test_user for resource Test; the response was DENY');
       error.code.should.equal('403');
       stopGrpcMockServer();
     });
@@ -288,8 +289,8 @@ describe('testing acs-client', () => {
         let ctx = ({
           session: {
             data: {
-              id: 'test_id',
-              name: 'test',
+              id: 'test_user_id',
+              name: 'test_user',
               scope: 'targetScope',
               role_associations: [
                 {
@@ -327,7 +328,7 @@ describe('testing acs-client', () => {
       let ctx = ({
         session: {
           data: {
-            name: 'test',
+            name: 'test_user',
             scope: 'targetScope',
             unauthenticated: true
           }
@@ -361,8 +362,8 @@ describe('testing acs-client', () => {
       let ctx = ({
         session: {
           data: {
-            id: 'test_id',
-            name: 'test',
+            id: 'test_user_id',
+            name: 'test_user',
             scope: 'targetScope',
             role_associations: [
               {
@@ -404,8 +405,8 @@ describe('testing acs-client', () => {
       let ctx = ({
         session: {
           data: {
-            id: 'test_id',
-            name: 'test',
+            id: 'test_user_id',
+            name: 'test_user',
             scope: 'targetScope',
             role_associations: [
               {

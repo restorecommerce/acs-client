@@ -233,16 +233,22 @@ export class ACSAuthZ implements IAuthZ {
       subject.role_associations = [];
     }
 
+    let cachePrefix = 'ACSAuthZ';
+
+    if (request.target.subject.id !== undefined) {
+      cachePrefix = request.target.subject.id + ':' + cachePrefix
+    }
+
     if (request.target.action == 'MODIFY' || request.target.action == 'DELETE') {
       resources = await getOrFill(resources, async (res) => {
         return this.getResourcesWithMetadata(resources);
-      }, 'ACSAuthZ:getResourcesWithMetadata');
+      }, cachePrefix + ':getResourcesWithMetadata');
     }
 
     if (!hierarchicalScope) {
       hierarchicalScope = await getOrFill(subject.role_associations, async (role_associations) => {
         return this.createHierarchicalScopeTrees(subject.role_associations);
-      }, 'ACSAuthZ:createHierarchicalScopeTrees');
+      }, cachePrefix + ':createHierarchicalScopeTrees');
     }
     authZRequest.context.subject = this.encode(_.merge(subject, {
       hierarchical_scope: hierarchicalScope
@@ -263,7 +269,7 @@ export class ACSAuthZ implements IAuthZ {
 
     const response = await getOrFill(authZRequest, async (req) => {
       return this.acs.isAllowed(authZRequest);
-    }, 'ACSAuthZ:isAllowed');
+    }, cachePrefix + ':isAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error(response.error);
@@ -365,11 +371,16 @@ export class ACSAuthZ implements IAuthZ {
     let resources = request.target.resources;
     const subject = request.target.subject;
 
+    let cachePrefix = 'ACSAuthZ';
+
+    if (request.target.subject.id !== undefined) {
+      cachePrefix = request.target.subject.id + ':' + cachePrefix
+    }
 
     if (!hierarchicalScope) {
       hierarchicalScope = await getOrFill(subject.role_associations, async (role_associations) => {
         return this.createHierarchicalScopeTrees(subject.role_associations);
-      }, 'ACSAuthZ:createHierarchicalScopeTrees');
+      }, cachePrefix + ':createHierarchicalScopeTrees');
     }
     authZRequest.context.subject = this.encode(_.merge(subject, {
       hierarchical_scope: hierarchicalScope
@@ -378,7 +389,7 @@ export class ACSAuthZ implements IAuthZ {
 
     const response = await getOrFill(authZRequest, async (req) => {
       return this.acs.whatIsAllowed(authZRequest);
-    }, 'ACSAuthZ:whatIsAllowed');
+    }, cachePrefix + ':whatIsAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error('Unexpected empty response from ACS');
