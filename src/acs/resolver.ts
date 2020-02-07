@@ -253,7 +253,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
         `config is disabled overriding the ACS result`);
     }
     // extend input filter to enforce applicable policies
-    const permissionArguments = await buildFilterPermissions(policySet, ctx, request.database);
+    const permissionArguments = buildFilterPermissions(policySet, ctx, request.database);
     if (!permissionArguments && authzEnforced) {
       const msg = `Access not allowed for a request from user ` +
         `${(ctx.session.data as UserSessionData).name} for resource ${resourceName}; ` +

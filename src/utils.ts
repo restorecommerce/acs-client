@@ -250,8 +250,8 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   return query;
 };
 
-export const buildFilterPermissions = async(policySet: PolicySetRQ,
-  ctx: any, database?: string): Promise<QueryArguments | UserQueryArguments> => {
+export const buildFilterPermissions = (policySet: PolicySetRQ,
+  ctx: any, database?: string): QueryArguments | UserQueryArguments => {
   const user = ctx.session.data as UserSessionData;
   const urns = cfg.get('authorization:urns');
   let query = {
