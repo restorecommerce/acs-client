@@ -30,8 +30,8 @@ let initRedis = async () => {
       ttl = cfg.get('authorization:cache:ttl');
       globalPrefix = cfg.get('authorization:cache:prefix');
 
-      redisClient.on("error", function (err) {
-        logger.error("Cache Error: ", err);
+      redisClient.on('error', err => {
+        logger.error('Cache Error: ', err);
       });
 
       redisClient.ping((err: Error | null, reply: string) => {

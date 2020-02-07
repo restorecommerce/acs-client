@@ -236,7 +236,7 @@ export class ACSAuthZ implements IAuthZ {
     let cachePrefix = 'ACSAuthZ';
 
     if (request.target.subject.id !== undefined) {
-      cachePrefix = request.target.subject.id + ':' + cachePrefix
+      cachePrefix = request.target.subject.id + ':' + cachePrefix;
     }
 
     if (request.target.action == 'MODIFY' || request.target.action == 'DELETE') {
@@ -374,7 +374,7 @@ export class ACSAuthZ implements IAuthZ {
     let cachePrefix = 'ACSAuthZ';
 
     if (request.target.subject.id !== undefined) {
-      cachePrefix = request.target.subject.id + ':' + cachePrefix
+      cachePrefix = request.target.subject.id + ':' + cachePrefix;
     }
 
     if (!hierarchicalScope) {
