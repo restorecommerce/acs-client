@@ -1,4 +1,4 @@
-### 0.0.4 (February 5th, 2020)
+### 0.0.4 (February 10th, 2020)
 
 - added caching for access control requests
 - up logging and null checks
