@@ -1,3 +1,8 @@
+### 0.0.4 (February 5th, 2020)
+
+- added caching for access control requests
+- up logging and null checks
+
 ### 0.0.3 (February 5th, 2020)
 
 - fix for api key mode for read operation

@@ -82,26 +82,34 @@ const formatResourceType = (type: string, namespacePrefix?: string): string => {
 export const createResourceTarget = (resources: Resource[], action: AuthZAction | AuthZAction[]) => {
   const flattened: Attribute[] = [];
   resources.forEach((resource) => {
-    const resourceType = formatResourceType(resource.type, resource.namespace);
-
-    if (resourceType) {
-      flattened.push({
-        id: urns.entity,
-        value: urns.model + `:${resourceType}`
-      });
-    }
-    if (resource.instance && resource.instance.id) {
-      flattened.push({
-        id: urns.resourceID,
-        value: resource.instance.id
-      });
-    }
-
-    if (resource.fields) {
-      resource.fields.forEach((field) => {
+    if (action != 'EXECUTE') {
+      const resourceType = formatResourceType(resource.type, resource.namespace);
+      if (resourceType) {
         flattened.push({
-          id: urns.property,
-          value: urns.model + `:${resourceType}#${field}`
+          id: urns.entity,
+          value: urns.model + `:${resourceType}`
+        });
+      }
+      if (resource.instance && resource.instance.id) {
+        flattened.push({
+          id: urns.resourceID,
+          value: resource.instance.id
+        });
+      }
+
+      if (resource.fields) {
+        resource.fields.forEach((field) => {
+          flattened.push({
+            id: urns.property,
+            value: urns.model + `:${resourceType}#${field}`
+          });
+        });
+      }
+    } else {
+      resources.forEach((resource) => {
+        flattened.push({
+          id: urns.operation,
+          value: resource.type
         });
       });
     }

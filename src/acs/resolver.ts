@@ -71,7 +71,7 @@ export const isAllowedRequest = async (ctx: ACSContext, action: AuthZAction, res
       }
     });
   } else {
-    let user;
+    let user: UserSessionData = {};
     if (ctx && ctx.session && ctx.session.data) {
       user = ctx.session.data as UserSessionData;
     }
@@ -171,13 +171,13 @@ const convertToObject = (resources: any | any[]): any | any[] => {
 export const accessRequest = async (action: AuthZAction, request: Resource[] | Resource | ReadRequest,
   ctx: ACSContext): Promise<Decision | PolicySetRQ> => {
   // if apiKey mode is enabled
-  if ((ctx as any).req
+  if (ctx && (ctx as any).req
     && (ctx as any).req.headers
     && (ctx as any).req.headers['authorization']
     && (ctx as any).req.headers['expected-authorization']
     && (ctx as any).req.headers['authorization'] === (ctx as any).req.headers['expected-authorization']) {
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
-      action === AuthZAction.DELETE|| action === AuthZAction.EXECUTE) {
+      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
       // for apiKey mode return PERMIT
@@ -208,19 +208,19 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     }
   }
 
-  if (ctx && ctx.session == null) {
-    // user registry
-    if (!ctx['authN']) { // user registry
-      if (action != AuthZAction.CREATE || isResource(request) && request.type != 'user'
-        || isResourceList(request) && request[0].type != 'user') {
-        throw new Unauthenticated(errors.USER_NOT_LOGGED_IN.message, errors.USER_NOT_LOGGED_IN.code);
-      }
-    }
+  if (!ctx || (ctx && ctx.session == null)) {
+    throw new Unauthenticated(errors.USER_NOT_LOGGED_IN.message, errors.USER_NOT_LOGGED_IN.code);
   }
 
   let resources: any[] = [];
+  let requestingUserName_ID = '';
+  if (ctx && ctx.session && ctx.session.data) {
+    requestingUserName_ID = ctx.session.data.name ? ctx.session.data.name: ctx.session.data.id;
+  }
   // for read operations
-  if (action == AuthZAction.READ && isReadRequest(request)) {
+  if (action == AuthZAction.READ && isReadRequest(request)
+    // for action create or modify with read request to get policySetRQ
+    || ((action == AuthZAction.CREATE || action == AuthZAction.MODIFY) && isReadRequest(request))) {
     const resourceName = request.entity;
     let policySet: PolicySetRQ;
     try {
@@ -238,7 +238,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     // handle case if policySet is empty
     if (_.isEmpty(policySet) && authzEnforced) {
       const msg = `Access not allowed for a request from user ` +
-        `${(ctx.session.data as UserSessionData).name} for resource ${resourceName}; ` +
+        `${requestingUserName_ID} for resource ${resourceName}; ` +
         `the response was INDETERMINATE`;
       const details = 'no matching policy/rule could be found';
       logger.verbose(msg);
@@ -248,15 +248,15 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
 
     if (_.isEmpty(policySet) && !authzEnforced) {
       logger.verbose(`The Access response was INDETERMIATE for a request from user ` +
-        `${(ctx.session.data as UserSessionData).name} for resource ${resourceName} ` +
+        `${requestingUserName_ID} for resource ${resourceName} ` +
         `as no matching policy/rule could be found, but since ACS enforcement ` +
         `config is disabled overriding the ACS result`);
     }
     // extend input filter to enforce applicable policies
-    const permissionArguments = buildFilterPermissions(policySet, ctx, request.database);
+    const permissionArguments = await buildFilterPermissions(policySet, ctx, request.database);
     if (!permissionArguments && authzEnforced) {
       const msg = `Access not allowed for a request from user ` +
-        `${(ctx.session.data as UserSessionData).name} for resource ${resourceName}; ` +
+        `${requestingUserName_ID} for resource ${resourceName}; ` +
         `the response was DENY`;
       const details = `user does not have access to target scope ${(ctx.session.data as UserSessionData).scope}`;
       logger.verbose(msg);
@@ -266,7 +266,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
 
     if (!permissionArguments && !authzEnforced) {
       logger.verbose(`The Access response was DENY for a request from user ` +
-        `${(ctx.session.data as UserSessionData).name} for resource ${resourceName} ` +
+        `${requestingUserName_ID} for resource ${resourceName} ` +
         `as user does not have access to target scope ${(ctx.session.data as UserSessionData).scope}, ` +
         `but since ACS enforcement config is disabled overriding the ACS result`);
     }
@@ -306,7 +306,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
         details = `User does not have access to requested target scope ${(ctx.session.data as UserSessionData).scope}`;
       }
       const msg = `Access not allowed for a request from user ` +
-        `${(ctx.session.data as UserSessionData).name} for resource ${resources[0].type}; ` +
+        `${requestingUserName_ID} for resource ${resources[0].type}; ` +
         `the response was ${decision}`;
       logger.verbose(msg);
       logger.verbose('Details:', { details });
@@ -321,7 +321,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
       details = `User does not have access to requested target scope ${(ctx.session.data as UserSessionData).scope}`;
     }
     logger.verbose(`Access not allowed for a request from user ` +
-      `${(ctx.session.data as UserSessionData).name} for resource ${resources[0].type}; ` +
+      `${requestingUserName_ID} for resource ${resources[0].type}; ` +
       `the response was ${decision}`);
     logger.verbose(`${details}, Overriding the ACS result as ACS enforce config is disabled`);
     decision = Decision.PERMIT;
@@ -343,7 +343,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
 export const parseResourceList = (resourceList: Array<any>, action: AuthZAction,
   entity: string, ctx: ACSContext, resourceNamespace?: string, fields?: string[]): Resource[] => {
   let userData = {};
-  if (ctx.session && ctx.session.data) {
+  if (ctx && ctx.session && ctx.session.data) {
     userData = (ctx.session.data);
   }
   return resourceList.map((resource): Resource => {
