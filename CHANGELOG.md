@@ -1,3 +1,7 @@
+### 0.0.5 (February 12th, 2020)
+
+- pushed the missing cache file
+
 ### 0.0.4 (February 10th, 2020)
 
 - added caching for access control requests
