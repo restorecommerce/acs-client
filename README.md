@@ -107,7 +107,7 @@ The cache can be invalidated by invoking [`flushCache`](./src/acs/cache.ts#L104)
 ## Development
 
 ### Tests
-For a simple example on how to use this client with a `access-control-srv` check the [test cases](https://github.com/restorecommerce/acs-client/blob/acs-tests/test/acs_test.ts).
+For a simple example on how to use this client with a `access-control-srv` check the [test cases](https://github.com/restorecommerce/acs-client/blob/master/test/acs_test.ts).
 
 - Run tests
 
