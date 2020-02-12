@@ -180,8 +180,14 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
       action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
-      // for apiKey mode return PERMIT
-      return Decision.PERMIT;
+      // make auth ctx uanth since authorization is disabled
+      if (!ctx || !ctx.session || !ctx.session.data) {
+        ctx = Object.assign({}, ctx, { session: { data: { unauthenticated: true } } });
+      }
+      return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
+        type: (request as ReadRequest).entity,
+        namespace: (request as ReadRequest).namespace
+      }]);
     }
   }
   let authzEnabled = cfg.get('authorization:enabled');
@@ -201,6 +207,10 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
       action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
+      // make auth ctx uanth since authorization is disabled
+      if (!ctx || !ctx.session || !ctx.session.data) {
+        ctx = Object.assign({}, ctx, { session: { data: { unauthenticated: true } } });
+      }
       return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
         type: (request as ReadRequest).entity,
         namespace: (request as ReadRequest).namespace
@@ -215,7 +225,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
   let resources: any[] = [];
   let requestingUserName_ID = '';
   if (ctx && ctx.session && ctx.session.data) {
-    requestingUserName_ID = ctx.session.data.name ? ctx.session.data.name: ctx.session.data.id;
+    requestingUserName_ID = ctx.session.data.name ? ctx.session.data.name : ctx.session.data.id;
   }
   // for read operations
   if (action == AuthZAction.READ && isReadRequest(request)

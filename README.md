@@ -15,6 +15,7 @@ Features:
 - This client supports access request for both methods [isAllowed](https://github.com/restorecommerce/access-control-srv#isallowed) and [whatIsAllowed](https://github.com/restorecommerce/access-control-srv#whatisallowed) exposed by `access-control-srv`.
 - It evaluates the [condition](https://github.com/restorecommerce/access-control-srv#rule) for `whatIsAllowed` requests.
 - It returns the decision made by the ACS.
+- It provides an optional caching mechanism for `isAllowed` and `whatIsAllowed` request operations using [redis](https://redis.io/).
 
 ## Configuration
 
@@ -25,7 +26,8 @@ orgScope: 'urn:\<organization\>:acs:model:<Entity_Name>'
 
 ex: orgScope: 'urn:restorecommerce:acs:model:organization.Organization'
 
-The applicable policies / rules can be enforced on the request using [`enforce`](cfg/config.json#L88) configuration
+The applicable policies / rules can be enforced on the request using [`enforce`](cfg/config.json#L88) configuration.
+The cache configurations for `redis` can be set using [`authorization:cache`](cfg/config.json#L121) configuration.
 
 ## API
 
@@ -89,6 +91,18 @@ Requests are performed providing [`io.restorecommerce.access_control.Request`](h
 ### `whatIsAllowed`
 
 This API exposes the [`isAllowed`](https://github.com/restorecommerce/access-control-srv#whatisallowed) api of `access-control-srv` and retruns the response as `Decision`. Requests are performed providing [`io.restorecommerce.access_control.Request`](https://github.com/restorecommerce/access-control-srv#whatisallowed) message as input and response is [`io.restorecommerce.access_control.ReverseQuery`](https://github.com/restorecommerce/access-control-srv#whatisallowed) message.
+
+### `flushCache`
+
+This API flushes the ACS cache from redis. An optional prefix key can be provided to flush instead of entire cache.
+
+
+## Caching
+
+This client supports caching for `isAllowed` and `whatIsAllowed` access request operations if [`authorization:cache`](cfg/config.json#L121) options are set. The time to live for redis key can be set using [`authorization:cache:ttl`](cfg/config.json#L125) configuration. The hash key for caching the request is generated using [`MD5`](https://en.wikipedia.org/wiki/MD5) hash algorithm. 
+For `whatIsAllowed` operations `Request` Object is used to generate the hash key and for `isAllowed` operations [`io.restorecommerce.access_control.Target`](https://github.com/restorecommerce/access-control-srv#isallowed) Object is used since the resource data changes.
+Each of the ACS request is associated with an ID of [`subject`](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#xacml), this subject ID is included in the hash key as prefix to keep track of mapping between ACS requests and cached data.
+The cache can be invalidated by invoking [`flushCache`](./src/acs/cache.ts#L104) api with subject ID as prefix parameter.
 
 ## Development
 
