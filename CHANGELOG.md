@@ -1,3 +1,7 @@
+### 0.0.6 (February 12th, 2020)
+
+- modified caching for isAllowed requests not to include resource values for cache key
+
 ### 0.0.5 (February 12th, 2020)
 
 - pushed the missing cache file

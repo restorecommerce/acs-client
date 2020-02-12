@@ -261,7 +261,7 @@ export class ACSAuthZ implements IAuthZ {
     authZRequest.context.subject = this.encode(_.merge(subject, {
       hierarchical_scope: hierarchicalScope
     }));
-    // let idResource = [{ id: subject.id }];
+
     if (request.target.action == 'CREATE') {
       // insert temporary IDs into resources which are yet to be created
       let counter = 0;
@@ -275,7 +275,13 @@ export class ACSAuthZ implements IAuthZ {
     }
     authZRequest.context.resources = this.encode(resources);
 
-    const response = await getOrFill(authZRequest, async (req) => {
+    // for isAllowed we use the subject, action and resource fields .i.e. reqeust Target
+    // since the context resources contains the values which would change for each
+    // resource being created and should not be used in key when generating hash
+    let cacheKey = {
+      target: authZRequest.target
+    };
+    const response = await getOrFill(cacheKey, async (req) => {
       return this.acs.isAllowed(authZRequest);
     }, cachePrefix + ':isAllowed');
 
