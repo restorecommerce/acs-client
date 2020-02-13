@@ -27,25 +27,9 @@ let initializeCache = async () => {
 
     if (redisConfig) {
       redisConfig.db = cfg.get('authorization:cache:db-index');
-      let redisClient = redis.createClient(redisConfig);
+      redisInstance = redis.createClient(redisConfig);
       ttl = cfg.get('authorization:cache:ttl');
       globalPrefix = cfg.get('authorization:cache:prefix');
-
-      redisClient.on('error', err => {
-        logger.error('Cache Error: ', err);
-      });
-
-      redisClient.ping((err: Error | null, reply: string) => {
-        if (err) {
-          logger.error('Failed to connect to ACS cache: ', err);
-          return;
-        }
-
-        if (reply === 'PONG') {
-          logger.info('ACS Connected to cache');
-          redisInstance = redisClient;
-        }
-      });
     }
   }
 };

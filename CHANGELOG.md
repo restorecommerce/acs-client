@@ -1,3 +1,7 @@
+### 0.0.7 (February 13th, 2020)
+
+- removed redis client connectivity check as this should be independent from building docker images
+
 ### 0.0.6 (February 12th, 2020)
 
 - modified caching for isAllowed requests not to include resource values for cache key
