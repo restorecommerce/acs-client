@@ -1,3 +1,7 @@
+### 0.0.8 (February 13th, 2020)
+
+- made the cache initialization to be explicit from application
+
 ### 0.0.7 (February 13th, 2020)
 
 - removed redis client connectivity check as this should be independent from building docker images
