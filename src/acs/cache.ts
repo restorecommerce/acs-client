@@ -8,7 +8,10 @@ let ttl: number | undefined;
 let globalPrefix: string | undefined;
 let cacheEnabled = true;
 
-let initializeCache = async () => {
+/**
+ * Initialize ACS Cache
+ */
+export const initializeCache = async () => {
   if (attempted || !cacheEnabled) {
     return;
   }
@@ -33,8 +36,6 @@ let initializeCache = async () => {
     }
   }
 };
-
-initializeCache();
 
 /**
  * Find the object in cache. If not found, compute it using the filler function
