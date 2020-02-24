@@ -1,6 +1,6 @@
 {
   "name": "@restorecommerce/acs-client",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "Access Control Service Client",
   "author": "Invend GmbH",
   "repository": {

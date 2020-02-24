@@ -1,4 +1,8 @@
-### 0.0.9 (February 13th, 2020)
+### 0.1.0 (February 24th, 2020)
+
+- js files was not published for 0.0.9 
+
+### 0.0.9 (February 24th, 2020)
 
 - made TTL for ACS caching optional configuration
 
