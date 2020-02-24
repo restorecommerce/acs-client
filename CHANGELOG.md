@@ -1,3 +1,7 @@
+### 0.0.9 (February 13th, 2020)
+
+- made TTL for ACS caching optional configuration
+
 ### 0.0.8 (February 13th, 2020)
 
 - made the cache initialization to be explicit from application

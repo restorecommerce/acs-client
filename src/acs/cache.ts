@@ -72,7 +72,11 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
 
       return filler(keyData).then((data) => {
         if (data) {
-          redisInstance.setex(redisKey, ttl, JSON.stringify(data));
+          if (ttl) {
+            redisInstance.setex(redisKey, ttl, JSON.stringify(data));
+          } else {
+            redisInstance.set(redisKey, JSON.stringify(data));
+          }
         }
 
         resolve(data);
