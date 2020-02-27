@@ -1,3 +1,7 @@
+### 0.1.2 (February 27th, 2020)
+
+- removed console log messages
+
 ### 0.1.1 (February 27th, 2020)
 
 - fix for filter permissions
