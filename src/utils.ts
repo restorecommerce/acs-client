@@ -162,16 +162,17 @@ const checkUserSubjectMatch = (user: UserSessionData, ruleSubjectAttributes: Att
   return false;
 };
 
-const validateCondition = (condition: string, request: any): boolean =>  {
+const validateCondition = (condition: string, request: any): boolean => {
   return nodeEval(condition, 'condition.js', request);
 };
 
 const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
-  userTotalScope: string[], urns: any, condition?: string, context?: any, database?: string): QueryParams => {
+  userTotalScope: string[], urns: any, userCondition, scopingUpdated,
+  condition?: string, context?: any, database?: string): QueryParams => {
   const { subject, resources } = target;
 
-  const filter = [];
-  const query = {};
+  let filter = [];
+  const query: any = {};
   let filterId;
 
   // if there is a condition add this to filter
@@ -180,7 +181,9 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
     const request = { target, context };
     try {
       filterId = validateCondition(condition, request);
-      if (filterId) {
+      // special filter added to filter user read for his own entity
+      if (filterId && !scopingUpdated) {
+        userCondition = true;
         filter.push({
           id: {
             $eq: filterId
@@ -194,6 +197,10 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   const scopingAttribute = _.find(subject, (attribute: Attribute) =>
     attribute.id == urns.roleScopingEntity);
   if (!!scopingAttribute && effect == Effect.PERMIT && !database) { // note: there is currently no query to exclude scopes
+    // userTotalScope is an array accumulated scopes for each rule
+    if (userCondition) {
+      filter = [];
+    }
     query['scope'] = {
       custom_query: 'filterByOwnership',
       custom_arguments: {
@@ -202,6 +209,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
         instance: userTotalScope
       }
     };
+    scopingUpdated = true;
   } else if (database && database === 'postgres' && effect == Effect.PERMIT) {
     query['filter'] = [];
     for (let eachScope of userTotalScope) {
@@ -242,11 +250,13 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   const key = effect == Effect.PERMIT ? '$or' : '$and';
   if (query['filter']) {
     query['filter'] = Object.assign({}, query['filter'], { [key]: filter });
-  } else if (!_.isEmpty(filter) || key == '$or' ) {
+  } else if (!_.isEmpty(filter) || key == '$or') {
     query['filter'] = {
       [key]: filter
     };
   }
+  query.scopingUpdated = scopingUpdated;
+  query.userCondition = userCondition;
   return query;
 };
 
@@ -288,6 +298,8 @@ export const buildFilterPermissions = (policySet: PolicySetRQ,
           effect = algorithm == urns.permitOverrides ? Effect.DENY : Effect.PERMIT;
         }
 
+        let userCondition = false;
+        let scopingUpdated = false;
         for (let rule of policy.rules) {
           let reducedUserScope = [];
           if (rule.target && rule.target.subject) {
@@ -301,7 +313,14 @@ export const buildFilterPermissions = (policySet: PolicySetRQ,
           }
           if (rule.effect == effect) {
             const filterPermissions = buildQueryFromTarget(rule.target, effect,
-              reducedUserScope, urns, rule.condition, ctx, database);
+              reducedUserScope, urns, userCondition, scopingUpdated,
+              rule.condition, ctx, database);
+            if (!_.isEmpty(filterPermissions)) {
+              scopingUpdated = filterPermissions.scopingUpdated;
+              userCondition = filterPermissions.userCondition;
+              delete filterPermissions.scopingUpdated;
+              delete filterPermissions.userCondition;
+            }
             if (!_.isEmpty(filterPermissions)) {
               policyFilters.push(filterPermissions);
             }
@@ -383,4 +402,6 @@ interface QueryParams {
   scope?: any;
   filter?: any;
   field?: any[];
+  scopingUpdated?: boolean;
+  userCondition?: boolean;
 }

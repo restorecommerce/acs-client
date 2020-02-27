@@ -1,3 +1,7 @@
+### 0.1.1 (February 27th, 2020)
+
+- fix for filter permissions
+
 ### 0.1.0 (February 24th, 2020)
 
 - js files was not published for 0.0.9 
