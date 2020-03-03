@@ -266,16 +266,16 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     if (!permissionArguments && authzEnforced) {
       const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
         `resource:${resourceName}, action:${action}; the response was DENY`;
-      const details = `user does not have access to target scope ${(ctx.session.data as UserSessionData).scope}`;
+      const details = `Subject:${requestingUserName_ID} does not have access to target scope ${(ctx.session.data as UserSessionData).scope}`;
       logger.verbose(msg);
       logger.verbose('Details:', { details });
       throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
     }
 
     if (!permissionArguments && !authzEnforced) {
-      logger.verbose(`The Access response was DENY for a request from user ` +
-        `${requestingUserName_ID} for resource ${resourceName} ` +
-        `as user does not have access to target scope ${(ctx.session.data as UserSessionData).scope}, ` +
+      logger.verbose(`The Access response was DENY for a request from subject:${requestingUserName_ID} ` +
+        `for resource ${resourceName} ` +
+        `as subject does not have access to target scope ${(ctx.session.data as UserSessionData).scope}, ` +
         `but since ACS enforcement config is disabled overriding the ACS result`);
     }
 
@@ -311,7 +311,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
       if (decision === Decision.INDETERMINATE) {
         details = 'No matching policy / rule was found';
       } else if (decision === Decision.DENY) {
-        details = `User does not have access to requested target scope ${(ctx.session.data as UserSessionData).scope}`;
+        details = `Subject:${requestingUserName_ID} does not have access to requested target scope ${(ctx.session.data as UserSessionData).scope}`;
       }
       const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
         `resource:${resources[0].type}, action:${action}; the response was ${decision}`;
@@ -325,7 +325,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     if (decision === Decision.INDETERMINATE) {
       details = 'No matching policy / rule was found';
     } else if (decision === Decision.DENY) {
-      details = `User does not have access to requested target scope ${(ctx.session.data as UserSessionData).scope}`;
+      details = `Subject:${requestingUserName_ID} does not have access to requested target scope ${(ctx.session.data as UserSessionData).scope}`;
     }
     logger.verbose(`Access not allowed for request with subject:${requestingUserName_ID}, ` +
       `resource:${resources[0].type}, action:${action}; the response was ${decision}`);
