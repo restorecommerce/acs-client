@@ -1,3 +1,8 @@
+### 0.1.3 (March 3rd, 2020)
+
+- fixed bug in filtering
+- improved response message
+
 ### 0.1.2 (February 27th, 2020)
 
 - removed console log messages

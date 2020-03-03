@@ -359,7 +359,7 @@ export const buildFilterPermissions = (policySet: PolicySetRQ,
       continue;
     }
 
-    if (policy.filter) {
+    if (policy.filter && policy.filter[key] && policy.filter[key].length > 0) {
       (query as any) = { filter: {} };
       if (!query.filter[key]) {
         query.filter[key] = [];
