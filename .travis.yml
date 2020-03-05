@@ -16,11 +16,15 @@ before_install:
   - sudo apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y docker-ce
   - 'npm install -g typescript'
   - 'npm install -g tslint'
-  - docker network create --driver bridge resource_net
-  - docker run --name resource_redis -d --net=resource_net -p 127.0.0.1:6379:6379 redis:5.0.3-alpine
+  - docker network create --driver bridge acs_client_net
+  - docker run --name acs_client_redis -d --net=acs_client_net -p 127.0.0.1:6379:6379 redis:5.0.3-alpine
+  - docker run --name acs_client_zk -d --net=acs_client_net -p 2181:2181 zookeeper:3.5.5
+  - docker run --name acs_client_kafka -d --net=acs_client_net -p 29092:29092 -e KAFKA_CFG_LISTENERS=PLAINTEXT://:29092 -e KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092 -e ALLOW_PLAINTEXT_LISTENER=yes -e KAFKA_CFG_ZOOKEEPER_CONNECT=zk:2181 -e KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true -e KAFKA_CFG_DELETE_TOPIC_ENABLE=true -v /var/run/docker.sock:/var/run/docker.sock --link acs_client_zk:zk bitnami/kafka:2.3.1 
   - sleep 10
   - docker ps -a
-  - docker logs resource_redis
+  - docker logs acs_client_redis
+  - docker logs acs_client_zk
+  - docker logs acs_client_kafka
 
 after_success:
   - 'npm run coveralls'
