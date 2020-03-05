@@ -7,6 +7,103 @@
       "prettyPrint": true
     }
   },
+  "events": {
+    "kafka": {
+      "provider": "kafka",
+      "groupId": "acs-client",
+      "clientId": "acs-client-id",
+      "kafkaHost": "localhost:29092",
+      "policy_setCreated": {
+        "protos": [
+          "io/restorecommerce/policy_set.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.policy_set.PolicySet"
+      },
+      "policy_setModified": {
+        "protos": [
+          "io/restorecommerce/policy_set.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.policy_set.PolicySet"
+      },
+      "policy_setDeleted": {
+        "protos": [
+          "io/restorecommerce/policy_set.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.policy_set.PolicySet"
+      },
+      "policyCreated": {
+        "protos": [
+          "io/restorecommerce/policy.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.policy.Policy"
+      },
+      "policyModified": {
+        "protos": [
+          "io/restorecommerce/policy.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.policy.Policy"
+      },
+      "policyDeleted": {
+        "protos": [
+          "io/restorecommerce/policy.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.policy.Policy"
+      },
+      "ruleCreated": {
+        "protos": [
+          "io/restorecommerce/rule.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.rule.Rule"
+      },
+      "ruleModified": {
+        "protos": [
+          "io/restorecommerce/rule.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.rule.Rule"
+      },
+      "ruleDeleted": {
+        "protos": [
+          "io/restorecommerce/rule.proto"
+        ],
+        "protoRoot": "node_modules/@restorecommerce/protos/",
+        "messageObject": "io.restorecommerce.rule.Rule"
+      },
+      "evictACSCache": {
+        "policy.resource": {
+          "topic": "io.restorecommerce.policies.resource",
+          "events": [
+            "policyCreated",
+            "policyModified",
+            "policyDeleted"
+          ]
+        },
+        "rule.resource": {
+          "topic": "io.restorecommerce.rules.resource",
+          "events": [
+            "ruleCreated",
+            "ruleModified",
+            "ruleDeleted"
+          ]
+        },
+        "policy_set.resource": {
+          "topic": "io.restorecommerce.policy_sets.resource",
+          "events": [
+            "policy_setCreated",
+            "policy_setModified",
+            "policy_setDeleted"
+          ]
+        }
+      }
+    }
+  },
   "client": {
     "acs-srv": {
       "transports": {
@@ -118,7 +215,7 @@
         "edge": "org_has_parent_org"
       }
     ],
-    "cache":  {
+    "cache": {
       "host": "localhost",
       "port": 6379,
       "db-index": 5,

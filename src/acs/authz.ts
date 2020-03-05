@@ -9,7 +9,8 @@ import {
 import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { cfg, updateConfig } from '../config';
 import logger from '../logger';
-import { getOrFill } from './cache';
+import { getOrFill, flushCache } from './cache';
+import { Events } from '@restorecommerce/kafka-client';
 
 export declare type Authorizer = ACSAuthZ;
 export let authZ: Authorizer;
@@ -482,18 +483,55 @@ export class ACSAuthZ implements IAuthZ {
   }
 }
 
+const acsEvents = [
+  'policy_setCreated',
+  'policy_setModified',
+  'policy_setDeleted',
+  'policyCreated',
+  'policyModified',
+  'policyDeleted',
+  'ruleCreated',
+  'ruleModified',
+  'ruleDeleted',
+];
+
+const eventListener = async (msg: any,
+  context: any, config: any, eventName: string): Promise<any> => {
+  if (acsEvents.indexOf(eventName) > -1) {
+    // no prefix provided, flush complete cache
+    logger.info(`Received event ${eventName} and hence evicting ACS cache`);
+    await flushCache();
+  }
+};
+
 export const initAuthZ = async (config?: any): Promise<void | ACSAuthZ> => {
   if (!authZ) {
     if (config) {
       updateConfig(config);
     }
     const authzCfg = cfg.get('authorization');
+    const kafkaCfg = cfg.get('events:kafka');
     // gRPC interface for access-control-srv
     if (authzCfg.enabled) {
       const grpcConfig = cfg.get('client:acs-srv');
       const client = new Client(grpcConfig, logger);
       const acs = await client.connect();
       authZ = new ACSAuthZ(acs);
+      // listeners for rules / policies / policySets modified, so as to
+      // delete the Cache as it would be invalid if ACS resources are modified
+      if (kafkaCfg && kafkaCfg.evictACSCache) {
+        const events = new Events(kafkaCfg, logger);
+        await events.start();
+        for (let topicLabel in kafkaCfg.evictACSCache) {
+          let topicCfg = kafkaCfg.evictACSCache[topicLabel];
+          let topic = events.topic(topicCfg.topic);
+          if (topicCfg.events) {
+            for (let eachEvent of topicCfg.events) {
+              await topic.on(eachEvent, eventListener);
+            }
+          }
+        }
+      }
       return authZ;
     }
   }

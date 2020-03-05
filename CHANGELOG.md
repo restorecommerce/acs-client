@@ -1,3 +1,7 @@
+### 0.1.4 (March 5th, 2020)
+
+- flush ACS cache when rules / policies / policy sets are updated
+
 ### 0.1.3 (March 3rd, 2020)
 
 - fixed bug in filtering
