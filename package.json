@@ -57,11 +57,12 @@
     "build:clean": "rimraf lib",
     "build": "npm-run-all lint build:clean build:tsc",
     "lint": "eslint src --ext .ts",
-    "pretest": "npm run build && npm run tsctests",
+    "pretest": "npm run build && npm run createtopics && npm run tsctests",
     "tsctests": "tsc -d -p tsconfig.test.json",
     "test": "npm run lint && nyc npm run mocha && nyc npm run mocha:cache",
     "mocha": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --full-trace --exit",
     "mocha:cache": "cross-env NODE_ENV=test CACHE_ENABLED=true mocha -R spec ./test/*.js --full-trace --exit",
-    "test-debug": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --inspect-brk"
+    "test-debug": "cross-env NODE_ENV=test mocha -R spec ./test/*.js --inspect-brk",
+    "createtopics": "node setupTopics.js io.restorecommerce.rules.resource io.restorecommerce.policies.resource io.restorecommerce.policy_sets.resource"
   }
 }
