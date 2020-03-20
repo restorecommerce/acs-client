@@ -1,5 +1,5 @@
 import {
-  RoleAssociation, UserScope, UserSessionData,
+  RoleAssociation, UserScope, Subject,
   PolicySetRQ, Effect, AttributeTarget, Attribute, HierarchicalScope
 } from './acs/interfaces';
 import * as _ from 'lodash';
@@ -47,7 +47,7 @@ export const reduceRoleAssociations = async (roleAssociations: RoleAssociation[]
   return scope;
 };
 
-export const convertDBUser = async (user: UserSessionData): Promise<UserSessionData> => {
+export const convertDBUser = async (user: Subject): Promise<Subject> => {
   const defaultScope: string = user.default_scope || undefined;
   let scope: UserScope;
   if (defaultScope) {
@@ -96,7 +96,7 @@ const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string,
   return false;
 };
 
-const checkUserSubjectMatch = (user: UserSessionData, ruleSubjectAttributes: Attribute[],
+const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
   reducedUserScope?: string[]): boolean => {
   // 1) Iterate through ruleSubjectAttributes and check if the roleScopingEntity URN and
   // role URN exists
@@ -168,7 +168,7 @@ const validateCondition = (condition: string, request: any): boolean => {
 
 const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   userTotalScope: string[], urns: any, userCondition, scopingUpdated,
-  condition?: string, context?: any, database?: string): QueryParams => {
+  condition?: string, reqSubject?: Subject, database?: string): QueryParams => {
   const { subject, resources } = target;
 
   let filter = [];
@@ -178,7 +178,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   // if there is a condition add this to filter
   if (condition && !_.isEmpty(condition)) {
     condition = condition.replace(/\\n/g, '\n');
-    const request = { target, context };
+    const request = { target, context: { session: { data: { id: reqSubject.id } } } };
     try {
       filterId = validateCondition(condition, request);
       // special filter added to filter user read for his own entity
@@ -261,8 +261,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
 };
 
 export const buildFilterPermissions = (policySet: PolicySetRQ,
-  ctx: any, database?: string): QueryArguments | UserQueryArguments => {
-  const user = ctx.session.data as UserSessionData;
+  subject: Subject, database?: string): QueryArguments | UserQueryArguments => {
   const urns = cfg.get('authorization:urns');
   let query = {
     filter: []
@@ -278,7 +277,7 @@ export const buildFilterPermissions = (policySet: PolicySetRQ,
         const algorithm = policy.combining_algorithm;
         // iterate through policy_set and check subject in policy and Rule:
         if (policy.target && policy.target.subject) {
-          let userSubjectMatched = checkUserSubjectMatch(user, policy.target.subject);
+          let userSubjectMatched = checkSubjectMatch(subject, policy.target.subject);
           if (!userSubjectMatched) {
             logger.debug(`Skipping policy as policy subject and user subject don't match`);
             continue;
@@ -303,18 +302,18 @@ export const buildFilterPermissions = (policySet: PolicySetRQ,
         for (let rule of policy.rules) {
           let reducedUserScope = [];
           if (rule.target && rule.target.subject) {
-            let userSubjectMatched = checkUserSubjectMatch(user, rule.target.subject, reducedUserScope);
+            let userSubjectMatched = checkSubjectMatch(subject, rule.target.subject, reducedUserScope);
             if (!userSubjectMatched) {
               logger.debug(`Skipping rule as user subject and rule subject don't match`);
               continue;
             } else if (userSubjectMatched && reducedUserScope.length === 0) {
-              reducedUserScope = [user.scope];
+              reducedUserScope = [subject.scope];
             }
           }
           if (rule.effect == effect) {
             const filterPermissions = buildQueryFromTarget(rule.target, effect,
               reducedUserScope, urns, userCondition, scopingUpdated,
-              rule.condition, ctx, database);
+              rule.condition, subject, database);
             if (!_.isEmpty(filterPermissions)) {
               scopingUpdated = filterPermissions.scopingUpdated;
               userCondition = filterPermissions.userCondition;

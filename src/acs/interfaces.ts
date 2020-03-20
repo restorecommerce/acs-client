@@ -1,5 +1,3 @@
-import { ACSAuthZ } from './authz';
-
 export enum AuthZAction {
   CREATE = 'CREATE',
   READ = 'READ',
@@ -20,11 +18,7 @@ export interface HierarchicalScope {
   children?: HierarchicalScope[];
 }
 
-export interface Data {
-  data: UserSessionData;
-}
-
-export interface UserSessionData {
+export interface Subject {
   id?: string;
   name?: string;
   email?: string;
@@ -82,10 +76,10 @@ export interface Credentials {
   [key: string]: any;
 }
 
-export type AuthZTarget = Target<UserSessionData, Resource, AuthZAction>;
+export type AuthZTarget = Target<Subject, Resource, AuthZAction>;
 export type NoAuthTarget = Target<UnauthenticatedData, Resource, AuthZAction>;
 
-export type AuthZWhatIsAllowedTarget = Target<UserSessionData, Resource, AuthZAction[]>;
+export type AuthZWhatIsAllowedTarget = Target<Subject, Resource, AuthZAction[]>;
 export type NoAuthWhatIsAllowedTarget = Target<UnauthenticatedData, Resource, AuthZAction[]>;
 
 export interface AuthZContext {
@@ -133,11 +127,6 @@ export interface UnauthenticatedSession {
 
 export interface UnauthenticatedData {
   unauthenticated: true;
-}
-
-export interface ACSContext {
-  authZ?: ACSAuthZ;
-  session: Data;
 }
 
 export interface Attribute {

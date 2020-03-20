@@ -1,10 +1,8 @@
 import * as _ from 'lodash';
 import {
-  AuthZContext, Attribute,
-  AuthZAction, AuthZTarget, UserSessionData,
-  AuthZWhatIsAllowedTarget, PolicySetRQ, IAuthZ,
-  NoAuthTarget, UnauthenticatedData, NoAuthWhatIsAllowedTarget, RoleAssociation,
-  HierarchicalScope, Request, Resource, Decision
+  AuthZContext, Attribute, AuthZAction, AuthZTarget, AuthZWhatIsAllowedTarget,
+  PolicySetRQ, IAuthZ, NoAuthTarget, NoAuthWhatIsAllowedTarget, RoleAssociation,
+  HierarchicalScope, Request, Resource, Decision, Subject
 } from './interfaces';
 import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { cfg, updateConfig } from '../config';
@@ -36,14 +34,13 @@ export const createActionTarget = (action: any): Attribute[] => {
   }
 };
 
-export const createSubjectTarget = (subject: UserSessionData | UnauthenticatedData): Attribute[] => {
+export const createSubjectTarget = (subject: Subject): Attribute[] => {
   if (subject.unauthenticated) {
     return [{
       id: urns.unauthenticated_user,
       value: 'true'
     }];
   }
-  subject = subject as UserSessionData;
   let flattened = [
     {
       id: urns.subjectID,

@@ -2,12 +2,12 @@ import * as should from 'should';
 import { accessRequest, parseResourceList, ReadRequest, isAllowed, whatIsAllowed } from '../lib/acs/resolver';
 import { flushCache, initializeCache } from '../lib/acs/cache';
 import { createMockServer } from 'grpc-mock';
-import { AuthZAction, ACSContext, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/interfaces';
-import { initAuthZ, ACSAuthZ, UnAuthZ } from '../lib/acs/authz';
+import { AuthZAction, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/interfaces';
+import { initAuthZ, ACSAuthZ } from '../lib/acs/authz';
 import logger from '../lib/logger';
 import * as _ from 'lodash';
 
-let authZ: ACSAuthZ | UnAuthZ;
+let authZ: ACSAuthZ;
 let mockServer: any;
 
 const permitRule = {
@@ -133,8 +133,7 @@ const stopGrpcMockServer = async () => {
 
 async function start(): Promise<void> {
   // init AuthZ - initialises acs-client connection object
-  await initAuthZ();
-  authZ = require('./../lib/acs/authz');
+  authZ = await initAuthZ() as ACSAuthZ;
 }
 
 async function stop(): Promise<void> {
@@ -170,25 +169,17 @@ describe('testing acs-client', () => {
         name: 'Test',
         description: 'This is a test description'
       }];
-      // user ctx data updated in session
-      let ctx = ({
-        session: {
-          data: {
-            name: 'test_user',
-            scope: 'targetScope',
-            unauthenticated: true
-          }
-        }
-      }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this
-      // is done via middleware in the calling application
-      ctx = Object.assign({}, ctx, authZ);
+      let subject = {
+        name: 'test_user',
+        scope: 'targetScope',
+        unauthenticated: true
+      };
       // convert data and call accessRequest(), the response is from mock ACS
-      let data = parseResourceList(testResource, AuthZAction.CREATE, 'Test', ctx);
+      let data = parseResourceList(subject, testResource, AuthZAction.CREATE, 'Test');
       let response;
       let error;
       try {
-        response = await accessRequest(AuthZAction.CREATE, data, ctx) as Decision;
+        response = await accessRequest(subject, data, AuthZAction.CREATE, authZ) as Decision;
       } catch (err) {
         error = err;
       }
@@ -210,26 +201,19 @@ describe('testing acs-client', () => {
         description: 'This is a test description'
       }];
       // user ctx data updated in session
-      let ctx = ({
-        session: {
-          data: {
-            id: 'test_user_id',
-            name: 'test_user',
-            scope: 'targetScope',
-            role_associations: [
-              {
-                role: 'test-role'
-              }
-            ]
+      let subject = {
+        id: 'test_user_id',
+        name: 'test_user',
+        scope: 'targetScope',
+        role_associations: [
+          {
+            role: 'test-role'
           }
-        }
-      }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this
-      // is done via middleware in the calling application
-      ctx = Object.assign({}, ctx, authZ);
+        ]
+      };
       // convert data and call accessRequest(), the response is from mock ACS
-      let data = parseResourceList(testResource, AuthZAction.CREATE, 'Test', ctx);
-      const response = await accessRequest(AuthZAction.CREATE, data, ctx) as Decision;
+      let data = parseResourceList(subject, testResource, AuthZAction.CREATE, 'Test');
+      const response = await accessRequest(subject, data, AuthZAction.CREATE, authZ) as Decision;
       should.exist(response);
       response.should.equal('PERMIT');
       stopGrpcMockServer();
@@ -245,28 +229,20 @@ describe('testing acs-client', () => {
         args: { id: 'test_id' },
         database: 'postgres'
       } as ReadRequest;
-      // user ctx data updated in session
-      let ctx = ({
-        session: {
-          data: {
-            id: 'test_user_id',
-            name: 'test_user',
-            scope: 'targetScope',
-            role_associations: [
-              {
-                role: 'test-role'
-              }
-            ]
+      let subject = {
+        id: 'test_user_id',
+        name: 'test_user',
+        scope: 'targetScope',
+        role_associations: [
+          {
+            role: 'test-role'
           }
-        }
-      }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this
-      // is done via middleware in the calling application
-      ctx = Object.assign({}, ctx, authZ);
+        ]
+      };
       // call accessRequest(), the response is from mock ACS
       let error;
       try {
-        await accessRequest(AuthZAction.READ, input, ctx) as PolicySetRQ;
+        await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
       } catch (err) {
         error = err;
       }
@@ -289,26 +265,18 @@ describe('testing acs-client', () => {
           args: { id: 'test_id' },
           database: 'postgres'
         } as ReadRequest;
-        // user ctx data updated in session
-        let ctx = ({
-          session: {
-            data: {
-              id: 'test_user_id',
-              name: 'test_user',
-              scope: 'targetScope',
-              role_associations: [
-                {
-                  role: 'test-role'
-                }
-              ]
+        let subject = {
+          id: 'test_user_id',
+          name: 'test_user',
+          scope: 'targetScope',
+          role_associations: [
+            {
+              role: 'test-role'
             }
-          }
-        }) as ACSContext;
-        // update authZ(client connection object) object in ctx - this
-        // is done via middleware in the calling application
-        ctx = Object.assign({}, ctx, authZ);
+          ]
+        };
         // call accessRequest(), the response is from mock ACS
-        await accessRequest(AuthZAction.READ, input, ctx) as PolicySetRQ;
+        await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
         // verify input is modified to enforce the applicapble poilicies
         const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetScope' };
         input.args.filter[0].should.deepEqual(expectedFilterResponse);
@@ -328,20 +296,7 @@ describe('testing acs-client', () => {
         },
         context: {}
       } as ACSRequest;
-      // user ctx data updated in session
-      let ctx = ({
-        session: {
-          data: {
-            name: 'test_user',
-            scope: 'targetScope',
-            unauthenticated: true
-          }
-        }
-      }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this
-      // is done via middleware in the calling application
-      ctx = Object.assign({}, ctx, authZ);
-      const response = await isAllowed(isAllowedReqUnauth, ctx);
+      const response = await isAllowed(isAllowedReqUnauth, authZ);
       should.exist(response);
       response.should.equal('DENY');
       stopGrpcMockServer();
@@ -362,25 +317,7 @@ describe('testing acs-client', () => {
           resources: encode(JSON.stringify(resources))
         }
       } as ACSRequest;
-      // user ctx data updated in session
-      let ctx = ({
-        session: {
-          data: {
-            id: 'test_user_id',
-            name: 'test_user',
-            scope: 'targetScope',
-            role_associations: [
-              {
-                role: 'test-role'
-              }
-            ]
-          }
-        }
-      }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this
-      // is done via middleware in the calling application
-      ctx = Object.assign({}, ctx, authZ);
-      const response = await isAllowed(isAllowedReqAuth, ctx);;
+      const response = await isAllowed(isAllowedReqAuth, authZ);;
       should.exist(response);
       response.should.equal('PERMIT');
       stopGrpcMockServer();
@@ -405,26 +342,8 @@ describe('testing acs-client', () => {
           resources: encode(JSON.stringify(resources))
         }
       } as ACSRequest;
-      // user ctx data updated in session
-      let ctx = ({
-        session: {
-          data: {
-            id: 'test_user_id',
-            name: 'test_user',
-            scope: 'targetScope',
-            role_associations: [
-              {
-                role: 'test-role'
-              }
-            ]
-          }
-        }
-      }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this
-      // is done via middleware in the calling application
-      ctx = Object.assign({}, ctx, authZ);
       // call accessRequest(), the response is from mock ACS
-      const policySetRQResponse = await whatIsAllowed(whatIsAllowedReqAuth, ctx);
+      const policySetRQResponse = await whatIsAllowed(whatIsAllowedReqAuth, authZ);
       should.exist(policySetRQResponse);
       policySetRQResponse.id.should.equal('test_policy_set_id');
       policySetRQResponse.policies.length.should.equal(1);
