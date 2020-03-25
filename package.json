@@ -53,6 +53,7 @@
   },
   "scripts": {
     "build:tsc": "tsc -d",
+    "postinstall": "tsc -d",
     "build:tsc:watch": "tsc -d --watch",
     "build:clean": "rimraf lib",
     "build": "npm-run-all lint build:clean build:tsc",
