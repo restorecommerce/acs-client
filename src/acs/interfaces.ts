@@ -30,7 +30,7 @@ export interface Subject {
   unauthenticated?: boolean;
   default_scope?: string;
   scope?: string; // target scope
-  hierarchical_scope?: HierarchicalScope[]; // HR scope for user
+  hierarchical_scopes?: HierarchicalScope[]; // HR scope for user
 }
 
 export enum Decision {
