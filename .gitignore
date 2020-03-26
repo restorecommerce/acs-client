@@ -9,7 +9,7 @@ npm-debug.log
 .idea
 
 #*.js
-*.d.ts
+#*.d.ts
 
 *.log
 *~

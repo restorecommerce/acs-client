@@ -41,7 +41,7 @@ const whatIsAllowedRequest = async (subject: Subject | UnauthenticatedData,
         resources,
         subject
       }
-    }, (subject as Subject).hierarchical_scope);
+    }, (subject as Subject).hierarchical_scopes);
   }
 };
 
@@ -81,7 +81,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
         resources,
         subject
       }
-    }, (subject as Subject).hierarchical_scope);
+    }, (subject as Subject).hierarchical_scopes);
   }
 };
 

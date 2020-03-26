@@ -140,7 +140,7 @@ const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
           }
         }
         // check if this userAssocScope's HR object contains the targetScope
-        for (let hrScope of user.hierarchical_scope) {
+        for (let hrScope of user.hierarchical_scopes) {
           if (hrScope.id === userAssocScope) {
             userAssocHRScope = hrScope;
             break;
