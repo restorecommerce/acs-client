@@ -160,8 +160,8 @@ const convertToObject = (resources: any | any[]): any | any[] => {
  * or policy set reverse query `PolicySetRQ` depending on the requeste operation `isAllowed()` or
  * `whatIsAllowed()` respectively.
  * @param {Subject} subject Contains subject information
- * @param {AuthZAction} action Action to be performed on resource
  * @param {Resource | Resource[] | ReadRequest} request request object either Resource or ReadRequest
+ * @param {AuthZAction} action Action to be performed on resource
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
  * @returns {Decision | PolicySetRQ}
  */
@@ -204,6 +204,13 @@ export const accessRequest = async (subject: Subject | UnauthenticatedData,
     // if action is write
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
       action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
+      if ((action == AuthZAction.CREATE || action == AuthZAction.MODIFY) && isReadRequest(request)) {
+        // to return rules for write request
+        return await whatIsAllowedRequest(subject, [{
+          type: (request as ReadRequest).entity,
+          namespace: (request as ReadRequest).namespace
+        }], [action], authZ);
+      }
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
       // make auth ctx uanth since authorization is disabled
@@ -222,7 +229,7 @@ export const accessRequest = async (subject: Subject | UnauthenticatedData,
   }
 
   let resources: any[] = [];
-  let requestingUserName_ID = (subject as Subject).name? (subject as Subject).name: (subject as Subject).id;
+  let requestingUserName_ID = (subject as Subject).name ? (subject as Subject).name : (subject as Subject).id;
   let targetScope = (subject as Subject).scope;
   // for read operations
   if (action == AuthZAction.READ && isReadRequest(request)
