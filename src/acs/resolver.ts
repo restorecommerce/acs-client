@@ -45,14 +45,6 @@ const whatIsAllowedRequest = async (subject: Subject | UnauthenticatedData,
   }
 };
 
-const isResource = (object: any): object is Resource => {
-  return 'type' in object;
-};
-
-const isResourceList = (object: any): object is Resource[] => {
-  return _.isArray(object) && isResource(object[0]);
-};
-
 const isReadRequest = (object: any): object is ReadRequest => {
   return 'entity' in object;
 };
@@ -287,11 +279,9 @@ export const accessRequest = async (subject: Subject | UnauthenticatedData,
     return policySet;
   }
 
-  if (!isResourceList(request) && isResource(request)) {
-    request = [request];
-  }
-
-  if (isResourceList(request)) {
+  if (!_.isArray(request)) {
+    resources = [request];
+  } else {
     resources = request;
   }
 
