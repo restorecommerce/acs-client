@@ -17,17 +17,13 @@ export interface HierarchicalScope {
 }
 export interface Subject {
     id?: string;
-    name?: string;
-    email?: string;
-    first_name?: string;
-    last_name?: string;
-    timezone_id?: string;
-    locale_id?: string;
-    role_associations?: RoleAssociation[];
-    unauthenticated?: boolean;
-    default_scope?: string;
     scope?: string;
+    role_associations?: RoleAssociation[];
     hierarchical_scopes?: HierarchicalScope[];
+    unauthenticated?: boolean;
+}
+export interface ApiKey {
+    api_key?: string;
 }
 export declare enum Decision {
     PERMIT = "PERMIT",

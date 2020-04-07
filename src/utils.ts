@@ -47,20 +47,6 @@ export const reduceRoleAssociations = async (roleAssociations: RoleAssociation[]
   return scope;
 };
 
-export const convertDBUser = async (user: Subject): Promise<Subject> => {
-  const defaultScope: string = user.default_scope || undefined;
-  let scope: UserScope;
-  if (defaultScope) {
-    scope = await reduceRoleAssociations(user.role_associations, defaultScope);
-  }
-
-  return _.merge(_.pick(user, [
-    'id', 'name', 'email', 'locale_id', 'timezone_id', 'role_associations', 'first_name', 'last_name', 'default_scope'
-  ]), {
-    scope
-  });
-};
-
 export const handleError = (err: string | Error | any): any => {
   let error;
   if (typeof err == 'string') {

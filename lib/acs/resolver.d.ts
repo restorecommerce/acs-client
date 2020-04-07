@@ -1,4 +1,4 @@
-import { PolicySetRQ, Resource, Decision, ACSRequest, Subject, UnauthenticatedData } from './interfaces';
+import { PolicySetRQ, Resource, Decision, ACSRequest, Subject, UnauthenticatedData, ApiKey } from './interfaces';
 import { AuthZAction } from './interfaces';
 import { ACSAuthZ } from './authz';
 export declare const isAllowedRequest: (subject: Subject | UnauthenticatedData, resources: Resource[], action: AuthZAction, authZ: ACSAuthZ) => Promise<Decision>;
@@ -15,7 +15,7 @@ export declare const isAllowedRequest: (subject: Subject | UnauthenticatedData, 
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
  * @returns {Decision | PolicySetRQ}
  */
-export declare const accessRequest: (subject: Subject | UnauthenticatedData, request: Resource | Resource[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ) => Promise<Decision | PolicySetRQ>;
+export declare const accessRequest: (subject: Subject | ApiKey, request: Resource | Resource[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ) => Promise<Decision | PolicySetRQ>;
 /**
  * parses the input resources list and adds entity meta data to object
  * and returns resource list Resource[]

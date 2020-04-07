@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import {
   PolicySetRQ, UnauthenticatedContext, Resource, Decision,
-  ACSRequest, Subject, UnauthenticatedData
+  ACSRequest, Subject, UnauthenticatedData, ApiKey
 } from './interfaces';
 import { AuthZAction } from './interfaces';
 import logger from '../logger';
@@ -17,7 +17,7 @@ const subjectIsUnauthenticated = (subject: any): subject is UnauthenticatedConte
     && 'unauthenticated' in subject && subject['unauthenticated'];
 };
 
-const whatIsAllowedRequest = async (subject: Subject | UnauthenticatedData,
+const whatIsAllowedRequest = async (subject: Subject | ApiKey,
   resources: Resource[], action: AuthZAction[], authZ: ACSAuthZ) => {
   if (subjectIsUnauthenticated(subject)) {
     const grpcConfig = cfg.get('client:acs-srv');
@@ -39,7 +39,7 @@ const whatIsAllowedRequest = async (subject: Subject | UnauthenticatedData,
       target: {
         action,
         resources,
-        subject
+        subject: (subject as Subject)
       }
     }, (subject as Subject).hierarchical_scopes);
   }
@@ -157,30 +157,30 @@ const convertToObject = (resources: any | any[]): any | any[] => {
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
  * @returns {Decision | PolicySetRQ}
  */
-export const accessRequest = async (subject: Subject | UnauthenticatedData,
+export const accessRequest = async (subject: Subject | ApiKey,
   request: Resource[] | Resource | ReadRequest, action: AuthZAction,
   authZ: ACSAuthZ): Promise<Decision | PolicySetRQ> => {
-  // TODO: Check how to pass apiKey to application
+  // TODO: add command to sync dynamic apikey
+  let reqApiKey = (subject as ApiKey).api_key;
   // if apiKey mode is enabled
-  // if (ctx && (ctx as any).req
-  //   && (ctx as any).req.headers
-  //   && (ctx as any).req.headers['authorization']
-  //   && (ctx as any).req.headers['expected-authorization']
-  //   && (ctx as any).req.headers['authorization'] === (ctx as any).req.headers['expected-authorization']) {
-  //   if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
-  //     action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
-  //     return Decision.PERMIT;
-  //   } else if (action === AuthZAction.READ) {
-  //     // make auth ctx uanth since authorization is disabled
-  //     if (!ctx || !ctx.session || !ctx.session.data) {
-  //       ctx = Object.assign({}, ctx, { session: { data: { unauthenticated: true } } });
-  //     }
-  //     return await whatIsAllowedRequest(ctx as ACSContext, [action], [{
-  //       type: (request as ReadRequest).entity,
-  //       namespace: (request as ReadRequest).namespace
-  //     }]);
-  //   }
-  // }
+  if (reqApiKey) {
+    let configuredApiKey = cfg.get('authentication:apiKey');
+    if (configuredApiKey && configuredApiKey === reqApiKey ) {
+      if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
+        action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
+        return Decision.PERMIT;
+      } else if (action === AuthZAction.READ) {
+        // make auth ctx uanth since authorization is disabled
+        if (!subject) {
+          subject = { unauthenticated: true };
+        }
+        return await whatIsAllowedRequest(subject, [{
+          type: (request as ReadRequest).entity,
+          namespace: (request as ReadRequest).namespace
+        }], [action], authZ);
+      }
+    }
+  }
   let authzEnabled = cfg.get('authorization:enabled');
   let authzEnforced = cfg.get('authorization:enforce');
   // by default if the config for authorization enabling and enforcement is missing
@@ -214,7 +214,7 @@ export const accessRequest = async (subject: Subject | UnauthenticatedData,
   }
 
   let resources: any[] = [];
-  let requestingUserName_ID = (subject as Subject).name? (subject as Subject).name: (subject as Subject).id;
+  let requestingUserName_ID = (subject as Subject).id;
   let targetScope = (subject as Subject).scope;
   // for read operations
   if (action == AuthZAction.READ && isReadRequest(request)
@@ -251,7 +251,7 @@ export const accessRequest = async (subject: Subject | UnauthenticatedData,
         `config is disabled overriding the ACS result`);
     }
     // extend input filter to enforce applicable policies
-    const permissionArguments = buildFilterPermissions(policySet, subject, request.database);
+    const permissionArguments = buildFilterPermissions(policySet, subject as Subject, request.database);
     if (!permissionArguments && authzEnforced) {
       const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
         `resource:${resourceName}, action:${action}, target_scope:${targetScope}; the response was DENY`;
@@ -290,7 +290,7 @@ export const accessRequest = async (subject: Subject | UnauthenticatedData,
   // for write operations
   if (!_.isEmpty(resources) || action == AuthZAction.DELETE || action == AuthZAction.EXECUTE) {
     // authorization
-    decision = await isAllowedRequest(subject, resources, action, authZ);
+    decision = await isAllowedRequest(subject as Subject, resources, action, authZ);
 
     if (decision && decision != Decision.PERMIT && authzEnforced) {
       let details = '';
