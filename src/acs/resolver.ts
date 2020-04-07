@@ -169,6 +169,14 @@ export const accessRequest = async (subject: Subject | ApiKey,
       if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
         action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
         return Decision.PERMIT;
+      } else if (action === AuthZAction.READ) {
+        if (!subject) {
+          subject = { unauthenticated: true };
+        }
+        return await whatIsAllowedRequest(subject, [{
+          type: (request as ReadRequest).entity,
+          namespace: (request as ReadRequest).namespace
+        }], [action], authZ);
       }
     }
   }
