@@ -165,14 +165,12 @@ export const accessRequest = async (subject: Subject | ApiKey,
   // if apiKey mode is enabled
   if (reqApiKey) {
     let configuredApiKey = cfg.get('authentication:apiKey');
-    if (configuredApiKey && configuredApiKey === reqApiKey ) {
+    if (configuredApiKey && configuredApiKey === reqApiKey) {
       if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
         action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
         return Decision.PERMIT;
       } else if (action === AuthZAction.READ) {
-        if (!subject) {
-          subject = { unauthenticated: true };
-        }
+        subject = { unauthenticated: true };
         return await whatIsAllowedRequest(subject, [{
           type: (request as ReadRequest).entity,
           namespace: (request as ReadRequest).namespace
@@ -197,10 +195,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
       action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
-      // make auth ctx uanth since authorization is disabled
-      if (!subject) {
-        subject = { unauthenticated: true };
-      }
+      subject = { unauthenticated: true };
       return await whatIsAllowedRequest(subject, [{
         type: (request as ReadRequest).entity,
         namespace: (request as ReadRequest).namespace
