@@ -151,9 +151,9 @@ const convertToObject = (resources: any | any[]): any | any[] => {
  * to enforce the applicapble poilicies. The response is `Decision`
  * or policy set reverse query `PolicySetRQ` depending on the requeste operation `isAllowed()` or
  * `whatIsAllowed()` respectively.
- * @param {Subject} subject Contains subject information
- * @param {AuthZAction} action Action to be performed on resource
+ * @param {Subject | ApiKey} subject Contains subject information or ApiKey
  * @param {Resource | Resource[] | ReadRequest} request request object either Resource or ReadRequest
+ * @param {AuthZAction} action Action to be performed on resource
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
  * @returns {Decision | PolicySetRQ}
  */
@@ -169,15 +169,6 @@ export const accessRequest = async (subject: Subject | ApiKey,
       if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
         action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
         return Decision.PERMIT;
-      } else if (action === AuthZAction.READ) {
-        // make auth ctx uanth since authorization is disabled
-        if (!subject) {
-          subject = { unauthenticated: true };
-        }
-        return await whatIsAllowedRequest(subject, [{
-          type: (request as ReadRequest).entity,
-          namespace: (request as ReadRequest).namespace
-        }], [action], authZ);
       }
     }
   }

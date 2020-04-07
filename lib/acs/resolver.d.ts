@@ -9,9 +9,9 @@ export declare const isAllowedRequest: (subject: Subject | UnauthenticatedData, 
  * to enforce the applicapble poilicies. The response is `Decision`
  * or policy set reverse query `PolicySetRQ` depending on the requeste operation `isAllowed()` or
  * `whatIsAllowed()` respectively.
- * @param {Subject} subject Contains subject information
- * @param {AuthZAction} action Action to be performed on resource
+ * @param {Subject | ApiKey} subject Contains subject information or ApiKey
  * @param {Resource | Resource[] | ReadRequest} request request object either Resource or ReadRequest
+ * @param {AuthZAction} action Action to be performed on resource
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
  * @returns {Decision | PolicySetRQ}
  */
