@@ -390,3 +390,39 @@ interface QueryParams {
   scopingUpdated?: boolean;
   userCondition?: boolean;
 }
+
+const decodeValue = (value: any): any => {
+  let ret = {};
+
+  if (value.number_value) {
+    ret = value.number_value;
+  }
+  else if (value.string_value) {
+    ret = value.string_value;
+  }
+  else if (value.list_value) {
+    ret = _.map(value.list_value.values, (v) => {
+      return toObject(v, true); // eslint-disable-line
+    });
+  }
+  else if (value.struct_value) {
+    ret = toObject(value.struct_value); // eslint-disable-line
+  }
+  else if (!_.isNil(value.bool_value)) {
+    ret = value.bool_value;
+  }
+  return ret;
+};
+
+export const toObject = (struct: any, fromArray: any = false): Object => {
+  let obj = {};
+  if (!fromArray) {
+    _.forEach(struct.fields, (value, key) => {
+      obj[key] = decodeValue(value);
+    });
+  }
+  else {
+    obj = decodeValue(struct);
+  }
+  return obj;
+};

@@ -7,9 +7,10 @@ import { AuthZAction } from './interfaces';
 import logger from '../logger';
 import { errors, cfg } from '../config';
 import { buildFilterPermissions } from '../utils';
-import { Client } from '@restorecommerce/grpc-client';
+import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { UnAuthZ, ACSAuthZ } from './authz';
 import { Unauthenticated, PermissionDenied } from './errors';
+import { toObject } from './../utils';
 
 
 const subjectIsUnauthenticated = (subject: any): subject is UnauthenticatedContext => {
@@ -262,12 +263,22 @@ export const accessRequest = async (subject: Subject | ApiKey,
     }
 
     if (request.args && request.args.filter) {
+      if (_.isArray(request.args.filter)) {
+        request.args.filter = toObject(request.args.filter, true);
+      } else {
+        request.args.filter = toObject(request.args.filter);
+      }
       for (let filter of request.args.filter) {
         if (!_.isArray(permissionArguments.filter)) {
           permissionArguments.filter = [filter];
         }
         permissionArguments.filter.push(filter);
       }
+    }
+    if (_.isArray(permissionArguments.filter)) {
+      permissionArguments.filter = toStruct(permissionArguments.filter, true);
+    } else {
+      permissionArguments.filter = toStruct(permissionArguments.filter);
     }
     Object.assign(request.args, permissionArguments);
     return policySet;
