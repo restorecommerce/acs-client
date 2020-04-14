@@ -34,6 +34,7 @@
     "@typescript-eslint/eslint-plugin-tslint": "^2.8.0",
     "@typescript-eslint/parser": "^2.8.0",
     "@types/redis": "^2.8.13",
+    "coveralls": "^3.0.11",
     "cross-env": "^6.0.3",
     "eslint": "^6.7.0",
     "eslint-plugin-prefer-arrow-functions": "^3.0.1",

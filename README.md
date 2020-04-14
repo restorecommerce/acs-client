@@ -1,8 +1,8 @@
 # acs-client
 
-<img src="http://img.shields.io/npm/v/%40restorecommerce%2Facs%2Dclient.svg?style=flat-square" alt="">[![Build Status][build]](https://travis-ci.org/restorecommerce/acs-client?branch=master)[![Dependencies][depend]](https://david-dm.org/restorecommerce/acs-client)[![Coverage Status][cover]](https://coveralls.io/github/restorecommerce/acs-client?branch=master)
+[![Version][version]](https://www.npmjs.com/package/@restorecommerce/acs-client)[![Build Status][build]](https://travis-ci.org/restorecommerce/acs-client?branch=master)[![Dependencies][depend]](https://david-dm.org/restorecommerce/acs-client)[![Coverage Status][cover]](https://coveralls.io/github/restorecommerce/acs-client?branch=master)
 
-[version]: http://img.shields.io/npm/v/acs-client.svg?style=flat-square
+[version]: http://img.shields.io/npm/v/@restorecommerce/acs-client.svg?style=flat-square
 [build]: http://img.shields.io/travis/restorecommerce/acs-client/master.svg?style=flat-square
 [depend]: https://img.shields.io/david/restorecommerce/acs-client.svg?style=flat-square
 [cover]: http://img.shields.io/coveralls/restorecommerce/acs-client/master.svg?style=flat-square
