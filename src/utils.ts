@@ -164,7 +164,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   // if there is a condition add this to filter
   if (condition && !_.isEmpty(condition)) {
     condition = condition.replace(/\\n/g, '\n');
-    const request = { target, context: { session: { data: { id: reqSubject.id } } } };
+    const request = { target, context: { subject: { id: reqSubject.id } } };
     try {
       filterId = validateCondition(condition, request);
       // special filter added to filter user read for his own entity
