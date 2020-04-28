@@ -1,4 +1,4 @@
-import { AuthZContext, Attribute, AuthZAction, AuthZTarget, AuthZWhatIsAllowedTarget, PolicySetRQ, IAuthZ, NoAuthTarget, NoAuthWhatIsAllowedTarget, HierarchicalScope, Request, Resource, Decision, Subject } from './interfaces';
+import { AuthZContext, Attribute, AuthZAction, AuthZTarget, AuthZWhatIsAllowedTarget, PolicySetRQ, IAuthZ, NoAuthTarget, NoAuthWhatIsAllowedTarget, Request, Resource, Decision, Subject } from './interfaces';
 export declare type Authorizer = ACSAuthZ;
 export declare let authZ: Authorizer;
 export declare const createActionTarget: (action: any) => Attribute[];
@@ -31,7 +31,7 @@ export declare class ACSAuthZ implements IAuthZ {
      * @param action
      * @param resource
      */
-    isAllowed(request: Request<AuthZTarget, AuthZContext>, hierarchicalScope?: HierarchicalScope[]): Promise<Decision>;
+    isAllowed(request: Request<AuthZTarget, AuthZContext>): Promise<Decision>;
     /**
      * Read the resource's metadata on `modify`.
      * @param resources
@@ -43,9 +43,8 @@ export declare class ACSAuthZ implements IAuthZ {
     * @param action
     * @param resource
     */
-    whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>, hierarchicalScope?: HierarchicalScope[]): Promise<PolicySetRQ>;
+    whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>): Promise<PolicySetRQ>;
     private encode;
-    private createHierarchicalScopeTrees;
     prepareRequest(request: Request<AuthZTarget | AuthZWhatIsAllowedTarget, AuthZContext>): any;
 }
 export declare const initAuthZ: (config?: any) => Promise<void | ACSAuthZ>;

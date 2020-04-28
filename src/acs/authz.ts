@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
 import {
   AuthZContext, Attribute, AuthZAction, AuthZTarget, AuthZWhatIsAllowedTarget,
-  PolicySetRQ, IAuthZ, NoAuthTarget, NoAuthWhatIsAllowedTarget, RoleAssociation,
-  HierarchicalScope, Request, Resource, Decision, Subject
+  PolicySetRQ, IAuthZ, NoAuthTarget, NoAuthWhatIsAllowedTarget, Request,
+  Resource, Decision, Subject
 } from './interfaces';
 import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { cfg, updateConfig } from '../config';
