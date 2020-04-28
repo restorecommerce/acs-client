@@ -224,7 +224,7 @@ export class ACSAuthZ implements IAuthZ {
    * @param action
    * @param resource
    */
-  async isAllowed(request: Request<AuthZTarget, AuthZContext>, hierarchicalScope?: HierarchicalScope[]): Promise<Decision> {
+  async isAllowed(request: Request<AuthZTarget, AuthZContext>): Promise<Decision> {
     const authZRequest = this.prepareRequest(request);
     authZRequest.context = {
       subject: {},
@@ -251,14 +251,7 @@ export class ACSAuthZ implements IAuthZ {
       }, cachePrefix + ':getResourcesWithMetadata');
     }
 
-    if (!hierarchicalScope) {
-      hierarchicalScope = await getOrFill(subject.role_associations, async (role_associations) => {
-        return this.createHierarchicalScopeTrees(subject.role_associations);
-      }, cachePrefix + ':createHierarchicalScopeTrees');
-    }
-    authZRequest.context.subject = this.encode(_.merge(subject, {
-      hierarchical_scope: hierarchicalScope
-    }));
+    authZRequest.context.subject = this.encode(subject);
 
     if (request.target.action == 'CREATE') {
       // insert temporary IDs into resources which are yet to be created
@@ -372,8 +365,7 @@ export class ACSAuthZ implements IAuthZ {
   * @param action
   * @param resource
   */
-  async whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>,
-    hierarchicalScope?: HierarchicalScope[]): Promise<PolicySetRQ> {
+  async whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>): Promise<PolicySetRQ> {
     const authZRequest = this.prepareRequest(request);
     authZRequest.context = {
       subject: {},
@@ -389,14 +381,7 @@ export class ACSAuthZ implements IAuthZ {
       cachePrefix = request.target.subject.id + ':' + cachePrefix;
     }
 
-    if (!hierarchicalScope) {
-      hierarchicalScope = await getOrFill(subject.role_associations, async (role_associations) => {
-        return this.createHierarchicalScopeTrees(subject.role_associations);
-      }, cachePrefix + ':createHierarchicalScopeTrees');
-    }
-    authZRequest.context.subject = this.encode(_.merge(subject, {
-      hierarchical_scope: hierarchicalScope
-    }));
+    authZRequest.context.subject = this.encode(subject);
     authZRequest.context.resources = this.encode(resources);
 
     const response = await getOrFill(authZRequest, async (req) => {
@@ -422,27 +407,6 @@ export class ACSAuthZ implements IAuthZ {
         value: Buffer.from(JSON.stringify(object))
       };
     }
-  }
-
-  private async createHierarchicalScopeTrees(roleAssociations: RoleAssociation[]): Promise<HierarchicalScope[]> {
-    const ids = new Set<string>();
-    for (let roleAssoc of roleAssociations) {
-      const attributes = roleAssoc.attributes || [];
-      for (let attribute of attributes) {
-        if (attribute.id == urns.roleScopingInstance) {
-          ids.add(attribute.value);
-        }
-      }
-    }
-    if (ids.size == 0) { // subject has no hierarchical scope; e.g: SuperAdmin
-      return [];
-    }
-    const hierarchicalScope: HierarchicalScope[] = [];
-    const setArray = [...ids];
-    for (let id of setArray) {
-      hierarchicalScope.push({ id });
-    }
-    return hierarchicalScope;
   }
 
   prepareRequest(request: Request<AuthZTarget | AuthZWhatIsAllowedTarget, AuthZContext>): any {

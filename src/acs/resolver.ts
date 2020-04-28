@@ -42,7 +42,7 @@ const whatIsAllowedRequest = async (subject: Subject | ApiKey,
         resources,
         subject: (subject as Subject)
       }
-    }, (subject as Subject).hierarchical_scopes);
+    });
   }
 };
 
@@ -74,7 +74,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
         resources,
         subject
       }
-    }, (subject as Subject).hierarchical_scopes);
+    });
   }
 };
 
