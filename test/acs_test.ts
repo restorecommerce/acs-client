@@ -15,7 +15,10 @@ const permitRule = {
   target: {
     action: [],
     resources: [{ id: 'urn:restorecommerce:acs:names:model:entity', 'value': 'urn:test:acs:model:Test.Test' }],
-    subject: [{ 'id': 'urn:restorecommerce:acs:names:role', 'value': 'test-role' }]
+    subject: [{ 'id': 'urn:restorecommerce:acs:names:role', 'value': 'test-role' }, {
+      id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+      value: 'urn:test:acs:model:organization.Organization'
+    }]
   },
   effect: 'PERMIT'
 };
@@ -298,7 +301,17 @@ describe('testing acs-client', () => {
               scope: 'targetScope',
               role_associations: [
                 {
-                  role: 'test-role'
+                  role: 'test-role',
+                  attributes: [
+                    {
+                      id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+                      value: 'urn:test:acs:model:organization.Organization'
+                    },
+                    {
+                      id: 'urn:restorecommerce:acs:names:roleScopingInstance',
+                      value: 'targetScope'
+                    }
+                  ]
                 }
               ]
             }
