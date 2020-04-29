@@ -1,3 +1,8 @@
+### 0.1.5 (April 29th, 2020)
+
+- fix not to apply filter if scoping instance is not defined in rule
+- updated ACS response message to include target scope
+
 ### 0.1.4 (March 5th, 2020)
 
 - flush ACS cache when rules / policies / policy sets are updated

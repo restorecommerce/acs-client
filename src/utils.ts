@@ -307,8 +307,6 @@ export const buildFilterPermissions = (policySet: PolicySetRQ,
             if (!userSubjectMatched) {
               logger.debug(`Skipping rule as user subject and rule subject don't match`);
               continue;
-            } else if (userSubjectMatched && reducedUserScope.length === 0) {
-              reducedUserScope = [user.scope];
             }
           }
           if (rule.effect == effect) {
