@@ -78,7 +78,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
   }
 };
 
-const createMetadata = (resource: any, userData: any): any => {
+const createMetadata = (resource: any, subject: Subject): any => {
   let ownerAttributes = [];
   if (resource.meta && resource.meta.owner) {
     ownerAttributes = _.cloneDeep(resource.meta.owner);
@@ -92,7 +92,7 @@ const createMetadata = (resource: any, userData: any): any => {
   for (let attribute of ownerAttributes) {
     if (attribute.id == urns.ownerIndicatoryEntity && attribute.value == urns.user) {
       foundEntity = true;
-    } else if (attribute.id == urns.ownerInstance && attribute.value == userData.id && foundEntity) {
+    } else if (attribute.id == urns.ownerInstance && subject && attribute.value == subject.id && foundEntity) {
       ownUser = true;
       break;
     }
@@ -110,7 +110,7 @@ const createMetadata = (resource: any, userData: any): any => {
       });
   }
 
-  if (!ownUser && !!userData.id) {
+  if (!ownUser && subject && !!subject.id) {
     ownerAttributes.push(
       {
         id: urns.ownerIndicatoryEntity,
@@ -118,7 +118,7 @@ const createMetadata = (resource: any, userData: any): any => {
       },
       {
         id: urns.ownerInstance,
-        value: userData.id
+        value: subject.id
       });
   }
 
@@ -127,7 +127,9 @@ const createMetadata = (resource: any, userData: any): any => {
   if (!resource.meta) {
     resource.meta = {};
   }
-  resource.meta.modified_by = userData.id;
+  if (subject) {
+    resource.meta.modified_by = subject.id;
+  }
   resource.meta.owner = ownerAttributes;
   return resource;
 };
