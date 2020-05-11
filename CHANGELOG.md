@@ -1,3 +1,7 @@
+### 0.1.6 (May 11th, 2020)
+
+- fix to support building filter permissions when HR scoping is enabled or disabled
+
 ### 0.1.5 (April 29th, 2020)
 
 - fix not to apply filter if scoping instance is not defined in rule
