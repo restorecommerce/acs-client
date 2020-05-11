@@ -15,10 +15,19 @@ const permitRule = {
   target: {
     action: [],
     resources: [{ id: 'urn:restorecommerce:acs:names:model:entity', 'value': 'urn:test:acs:model:Test.Test' }],
-    subject: [{ 'id': 'urn:restorecommerce:acs:names:role', 'value': 'test-role' }, {
-      id: 'urn:restorecommerce:acs:names:roleScopingEntity',
-      value: 'urn:test:acs:model:organization.Organization'
-    }]
+    subject: [
+      {
+        'id': 'urn:restorecommerce:acs:names:role',
+        'value': 'test-role'
+      },
+      {
+        id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+        value: 'urn:test:acs:model:organization.Organization'
+      },
+      {
+        id: 'urn:restorecommerce:acs:names:hierarchicalRoleScoping',
+        value: 'true'
+      }]
   },
   effect: 'PERMIT'
 };
@@ -327,6 +336,126 @@ describe('testing acs-client', () => {
         input.args.filter[0].should.deepEqual(expectedFilterResponse);
         stopGrpcMockServer();
       });
+    it('Should PERMIT reading Test resource (PERMIT rule) with HR scoping enabled and verify input filter ' +
+      'is extended to enforce applicable policies', async () => {
+        // PolicySet contains PERMIT rule
+        policySetRQ.policy_sets[0].policies[0].rules[0] = permitRule;
+        startGrpcMockServer([{ method: 'WhatIsAllowed', input: '\{.*\:\{.*\:.*\}\}', output: policySetRQ },
+        { method: 'IsAllowed', input: '.*', output: {} }]);
+        // test resource to be read of type 'ReadRequest'
+        let input = {
+          entity: 'Test',
+          args: { id: 'test_id' },
+          database: 'postgres'
+        } as ReadRequest;
+        // user ctx data updated in session
+        let ctx = ({
+          session: {
+            data: {
+              id: 'test_user_id',
+              name: 'test_user',
+              scope: 'targetSubScope',
+              role_associations: [
+                {
+                  role: 'test-role',
+                  attributes: [
+                    {
+                      id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+                      value: 'urn:test:acs:model:organization.Organization'
+                    },
+                    {
+                      id: 'urn:restorecommerce:acs:names:roleScopingInstance',
+                      value: 'targetScope'
+                    }
+                  ]
+                }
+              ],
+              hierarchical_scope: [
+                {
+                  id: 'targetScope',
+                  children: [{
+                    id: 'targetSubScope'
+                  }]
+                }
+              ]
+            }
+          }
+        }) as ACSContext;
+        // update authZ(client connection object) object in ctx - this
+        // is done via middleware in the calling application
+        ctx = Object.assign({}, ctx, authZ);
+        // call accessRequest(), the response is from mock ACS
+        await accessRequest(AuthZAction.READ, input, ctx) as PolicySetRQ;
+        // verify input is modified to enforce the applicapble poilicies
+        const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetSubScope' };
+        input.args.filter[0].should.deepEqual(expectedFilterResponse);
+        stopGrpcMockServer();
+      });
+    it('Should DENY reading Test resource (PERMIT rule) with HR scoping disabled', async () => {
+      // PolicySet contains PERMIT rule
+      // disable HR scoping for permitRule
+      permitRule.target.subject[2].value = 'false';
+      policySetRQ.policy_sets[0].policies[0].rules[0] = permitRule;
+      startGrpcMockServer([{ method: 'WhatIsAllowed', input: '\{.*\:\{.*\:.*\}\}', output: policySetRQ },
+      { method: 'IsAllowed', input: '.*', output: {} }]);
+      // test resource to be read of type 'ReadRequest'
+      let input = {
+        entity: 'Test',
+        args: { id: 'test_id' },
+        database: 'postgres'
+      } as ReadRequest;
+      // user ctx data updated in session
+      let ctx = ({
+        session: {
+          data: {
+            id: 'test_user_id',
+            name: 'test_user',
+            scope: 'targetSubScope',
+            role_associations: [
+              {
+                role: 'test-role',
+                attributes: [
+                  {
+                    id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+                    value: 'urn:test:acs:model:organization.Organization'
+                  },
+                  {
+                    id: 'urn:restorecommerce:acs:names:roleScopingInstance',
+                    value: 'targetScope'
+                  }
+                ]
+              }
+            ],
+            hierarchical_scope: [
+              {
+                id: 'targetScope',
+                children: [{
+                  id: 'targetSubScope'
+                }]
+              }
+            ]
+          }
+        }
+      }) as ACSContext;
+      // update authZ(client connection object) object in ctx - this
+      // is done via middleware in the calling application
+      ctx = Object.assign({}, ctx, authZ);
+      // call accessRequest(), the response is from mock ACS
+      let error;
+      try {
+        await accessRequest(AuthZAction.READ, input, ctx) as PolicySetRQ;
+      } catch (err) {
+        error = err;
+      }
+      should.exist(error);
+      error.name.should.equal('PermissionDenied');
+      error.message.should.equal('permission denied');
+      error.details.should.equal('Access not allowed for request with subject:test_user, resource:Test, action:READ, target_scope:targetSubScope; the response was DENY');
+      error.code.should.equal('403');
+      stopGrpcMockServer();
+      // enable HR scoping for permitRule
+      permitRule.target.subject[2].value = 'true';
+    });
   });
   describe('Test isAllowed', () => {
     it('Should DENY creating Test resource with unauthenticated context', async () => {
