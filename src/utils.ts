@@ -80,15 +80,16 @@ const reduceUserScope = (hrScope: HierarchicalScope, reducedUserScope: string[])
   }
 };
 
-const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string, reducedUserScope: string[]): boolean => {
+const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string,
+  reducedUserScope: string[], hierarchicalRoleScopingCheck: string): boolean => {
   if (hrScope.id === targetScope) {
     // found the target scope object, iterate and put the orgs in reducedUserScope array
     logger.debug(`Target entity match found in the user's hierarchical scope`);
     reduceUserScope(hrScope, reducedUserScope);
     return true;
-  } else if (hrScope.children) {
+  } else if (hrScope.children && hierarchicalRoleScopingCheck === 'true') {
     for (let childNode of hrScope.children) {
-      if (checkTargetScopeExists(childNode, targetScope, reducedUserScope)) {
+      if (checkTargetScopeExists(childNode, targetScope, reducedUserScope, hierarchicalRoleScopingCheck)) {
         return true;
       }
     }
@@ -105,6 +106,8 @@ const checkUserSubjectMatch = (user: UserSessionData, ruleSubjectAttributes: Att
 
   let roleScopeEntExists = false;
   let roleValueExists = false;
+  // by default HR scoping check is considered
+  let hierarchicalRoleScopingCheck = 'true';
   let ruleRoleValue;
   let ruleRoleScopeEntityName;
   const urns = cfg.get('authorization:urns');
@@ -118,6 +121,8 @@ const checkUserSubjectMatch = (user: UserSessionData, ruleSubjectAttributes: Att
     } else if (attribute.id === urns.role) {
       roleValueExists = true;
       ruleRoleValue = attribute.value;
+    } else if (attribute.id === urns.hierarchicalRoleScoping) {
+      hierarchicalRoleScopingCheck = attribute.value;
     }
   }
 
@@ -146,7 +151,9 @@ const checkUserSubjectMatch = (user: UserSessionData, ruleSubjectAttributes: Att
             break;
           }
         }
-        if (userAssocHRScope && checkTargetScopeExists(userAssocHRScope, user.scope, reducedUserScope)) {
+        // check HR scope matching for subject if hierarchicalRoleScopingCheck is 'true'
+        if (userAssocHRScope && checkTargetScopeExists(userAssocHRScope,
+          user.scope, reducedUserScope, hierarchicalRoleScopingCheck)) {
           return true;
         }
       }
