@@ -71,11 +71,12 @@ export const handleError = (err: string | Error | any): any => {
   return error;
 };
 
-const reduceUserScope = (hrScope: HierarchicalScope, reducedUserScope: string[]) => {
+const reduceUserScope = (hrScope: HierarchicalScope, reducedUserScope: string[],
+  hierarchicalRoleScoping: string) => {
   reducedUserScope.push(hrScope.id);
-  if (hrScope.children) {
+  if (hrScope.children && hierarchicalRoleScoping === 'true') {
     for (let childNode of hrScope.children) {
-      reduceUserScope(childNode, reducedUserScope);
+      reduceUserScope(childNode, reducedUserScope, hierarchicalRoleScoping);
     }
   }
 };
@@ -85,7 +86,7 @@ const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string,
   if (hrScope.id === targetScope) {
     // found the target scope object, iterate and put the orgs in reducedUserScope array
     logger.debug(`Target entity match found in the user's hierarchical scope`);
-    reduceUserScope(hrScope, reducedUserScope);
+    reduceUserScope(hrScope, reducedUserScope, hierarchicalRoleScopingCheck);
     return true;
   } else if (hrScope.children && hierarchicalRoleScopingCheck === 'true') {
     for (let childNode of hrScope.children) {
