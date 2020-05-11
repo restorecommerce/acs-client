@@ -270,11 +270,13 @@ export const accessRequest = async (subject: Subject | ApiKey,
       } else {
         request.args.filter = toObject(request.args.filter);
       }
-      for (let filter of request.args.filter) {
-        if (!_.isArray(permissionArguments.filter)) {
-          permissionArguments.filter = [filter];
+      if (_.isArray(request.args.filter)) {
+        for (let filter of request.args.filter) {
+          if (!_.isArray(permissionArguments.filter)) {
+            permissionArguments.filter = [filter];
+          }
+          permissionArguments.filter.push(filter);
         }
-        permissionArguments.filter.push(filter);
       }
     }
     if (_.isArray(permissionArguments.filter)) {
