@@ -1,5 +1,5 @@
 import * as should from 'should';
-import { accessRequest, parseResourceList, ReadRequest, isAllowed, whatIsAllowed } from '../lib/acs/resolver';
+import { accessRequest, ReadRequest, isAllowed, whatIsAllowed } from '../lib/acs/resolver';
 import { flushCache, initializeCache } from '../lib/acs/cache';
 import { createMockServer } from 'grpc-mock';
 import { AuthZAction, ACSContext, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/interfaces';
@@ -121,6 +121,33 @@ interface serverRule {
   input: any,
   output: any
 }
+
+export const parseResourceList = (resourceList: Array<any>, action: AuthZAction,
+  entity: string, ctx: ACSContext, resourceNamespace?: string, fields?: string[]): any[] => {
+  return resourceList.map((resource): any => {
+    let instance = JSON.parse(JSON.stringify(resource));
+    if (action == AuthZAction.CREATE || action == AuthZAction.MODIFY || action == AuthZAction.DELETE) {
+      if (!instance.meta) {
+        instance.meta = {};
+      }
+      instance.meta.owner = [
+        {
+          id: 'urn:restorecommerce:acs:names:ownerIndicatoryEntity',
+          value: 'urn:test:acs:model:organization.Organization'
+        },
+        {
+          id: 'urn:restorecommerce:acs:names:ownerInstance',
+          value: 'targetScope'
+        }];
+    }
+    return {
+      fields: fields || _.keys(instance),
+      instance,
+      type: entity,
+      namespace: resourceNamespace
+    };
+  });
+};
 
 const startGrpcMockServer = async (rules: serverRule[]) => {
   // Create a mock ACS server to expose isAllowed and whatIsAllowed

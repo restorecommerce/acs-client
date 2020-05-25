@@ -6,7 +6,7 @@ import {
   NoAuthTarget, UnauthenticatedData, NoAuthWhatIsAllowedTarget, RoleAssociation,
   HierarchicalScope, Request, Resource, Decision
 } from './interfaces';
-import { Client, toStruct } from '@restorecommerce/grpc-client';
+import { Client } from '@restorecommerce/grpc-client';
 import { cfg, updateConfig } from '../config';
 import logger from '../logger';
 import { getOrFill, flushCache } from './cache';
@@ -248,12 +248,6 @@ export class ACSAuthZ implements IAuthZ {
       cachePrefix = request.target.subject.id + ':' + cachePrefix;
     }
 
-    if (request.target.action == 'MODIFY' || request.target.action == 'DELETE') {
-      resources = await getOrFill(resources, async (res) => {
-        return this.getResourcesWithMetadata(resources);
-      }, cachePrefix + ':getResourcesWithMetadata');
-    }
-
     if (!hierarchicalScope) {
       hierarchicalScope = await getOrFill(subject.role_associations, async (role_associations) => {
         return this.createHierarchicalScopeTrees(subject.role_associations);
@@ -299,74 +293,6 @@ export class ACSAuthZ implements IAuthZ {
     }
 
     return Decision.DENY;
-  }
-
-  /**
-   * Read the resource's metadata on `modify`.
-   * @param resources
-   */
-  private async getResourcesWithMetadata(resources: Resource[]) {
-    const ids = [];
-    let entity;
-    for (let resource of resources) {
-      if (!entity) {
-        entity = resource.type;
-      }
-
-      if (resource.instance && resource.instance.id) {
-        // "special" resources such as `admin_room_skips` do not have an ID
-        ids.push({ id: resource.instance.id });
-      }
-    }
-
-    if (!_.isEmpty(ids)) {
-      const grpcConfig = cfg.get(`client:${entity}`);
-      if (grpcConfig) {
-        const client = new Client(grpcConfig, logger);
-        const service = await client.connect();
-        let result;
-        if (entity == 'job') {
-          let jobIds = [];
-          for (let resource of resources) {
-            if (resource.instance && resource.instance.id) {
-              jobIds.push(resource.instance.id);
-            }
-          }
-          result = await service.read({
-            filter: {
-              job_ids: jobIds
-            }
-          });
-        } else {
-          result = await service.read({
-            filter: toStruct({
-              $or: ids
-            })
-          });
-        }
-        if (result.error) {
-          throw new Error('Error occurred while reading resources before updating: ' + result.error);
-        }
-
-        return result.data.items.map((item): Resource => {
-          return {
-            instance: item,
-            type: entity,
-            fields: []
-          };
-        });
-      }
-    } else {
-      // insert temporary IDs into resources which are yet to be created
-      let counter = 0;
-      for (let resource of resources) {
-        if (!resource.instance.id) {
-          resource.instance.id = String(counter++);
-          resource.fields.push('id');
-        }
-      }
-    }
-    return resources;
   }
 
   /**

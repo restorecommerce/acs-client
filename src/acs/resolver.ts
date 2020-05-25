@@ -89,73 +89,6 @@ export const isAllowedRequest = async (ctx: ACSContext, action: AuthZAction, res
   }
 };
 
-const createMetadata = (resource: any, userData: any): any => {
-  let ownerAttributes = [];
-  if (resource.meta && resource.meta.owner) {
-    ownerAttributes = _.cloneDeep(resource.meta.owner);
-  } else if (resource.owner) {
-    ownerAttributes = _.cloneDeep(resource.owner);
-  }
-  const urns = cfg.get('authorization:urns');
-
-  let ownUser = false;
-  let foundEntity = false;
-  for (let attribute of ownerAttributes) {
-    if (attribute.id == urns.ownerIndicatoryEntity && attribute.value == urns.user) {
-      foundEntity = true;
-    } else if (attribute.id == urns.ownerInstance && attribute.value == userData.id && foundEntity) {
-      ownUser = true;
-      break;
-    }
-  }
-
-  if (resource.orgKey) {
-    ownerAttributes.push(
-      {
-        id: urns.ownerIndicatoryEntity,
-        value: urns.organization
-      },
-      {
-        id: urns.ownerInstance,
-        value: resource.orgKey
-      });
-  }
-
-  if (!ownUser && !!userData.id) {
-    ownerAttributes.push(
-      {
-        id: urns.ownerIndicatoryEntity,
-        value: urns.user
-      },
-      {
-        id: urns.ownerInstance,
-        value: userData.id
-      });
-  }
-
-  delete resource.owner;
-
-  if (!resource.meta) {
-    resource.meta = {};
-  }
-  resource.meta.modified_by = userData.id;
-  resource.meta.owner = ownerAttributes;
-  return resource;
-};
-
-const convertToObject = (resources: any | any[]): any | any[] => {
-  if (!_.isArray(resources)) {
-    return JSON.parse(JSON.stringify(resources));
-  }
-  // GraphQL object is a pseudo-object;
-  // when processing its fields, we get an exception from gRPC
-  // so this fix is to sanitize all fields
-  return resources.map((resource) => {
-    const stringified = JSON.stringify(resource);
-    return JSON.parse(stringified);
-  });
-};
-
 /**
  * It turns an API request as can be found in typical Web frameworks like express, koa etc.
  * into a proper ACS request. For write operations it uses `isAllowed()` and for read operations
@@ -337,37 +270,6 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
 };
 
 /**
- * parses the input resources list and adds entity meta data to object
- * and returns resource list Resource[]
- * @param {Array<any>} resourceList input resources list
- * @param {AuthZAction} action action to be performed on resource
- * @param {string} entity target entity
- * @param {ACSContext} ctx context object
- * @param {string} resourceNamespace name space prefix for resoruce entity
- * @param {string[]} fields input fields
- * @return {Resource[]}
- */
-export const parseResourceList = (resourceList: Array<any>, action: AuthZAction,
-  entity: string, ctx: ACSContext, resourceNamespace?: string, fields?: string[]): Resource[] => {
-  let userData = {};
-  if (ctx && ctx.session && ctx.session.data) {
-    userData = (ctx.session.data);
-  }
-  return resourceList.map((resource): Resource => {
-    let instance = convertToObject(resource);
-    if (action == AuthZAction.CREATE || action == AuthZAction.MODIFY || action == AuthZAction.DELETE) {
-      instance = createMetadata(instance, userData);
-    }
-    return {
-      fields: fields || _.keys(instance),
-      instance,
-      type: entity,
-      namespace: resourceNamespace
-    };
-  });
-};
-
-/**
  * Exposes the isAllowed() api of `access-control-srv` and retruns the response
  * as `Decision`.
  * @param {ACSRequest} request input authorization request
@@ -419,10 +321,6 @@ export interface Output {
   error?: OutputError;
 }
 
-// error: {
-//   code: [err.code],
-//   message: err.message
-// }
 export interface OutputError {
   message: string;
   code: number;
