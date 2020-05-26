@@ -257,8 +257,8 @@ export class ACSAuthZ implements IAuthZ {
       hierarchical_scope: hierarchicalScope
     }));
 
-    if (request.target.action == 'CREATE') {
-      // insert temporary IDs into resources which are yet to be created
+    if (request.target.action == 'CREATE' || request.target.action == 'MODIFY' || request.target.action == 'DELETE') {
+      // insert temporary IDs into resources which are yet to be created if not present in input
       let counter = 0;
       resources = _.cloneDeep(request.target.resources).map((resource) => {
         if (!resource.instance.id) {
