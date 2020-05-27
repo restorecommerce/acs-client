@@ -1,3 +1,7 @@
+### 0.1.8 (May 27th, 2020)
+
+- fixed typings and insert temporary IDs into resources
+
 ### 0.1.7 (May 25th, 2020)
 
 - fix to remove meta data creation or updating in resource object
