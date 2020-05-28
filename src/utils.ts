@@ -57,24 +57,26 @@ export const handleError = (err: string | Error | any): any => {
   return error;
 };
 
-const reduceUserScope = (hrScope: HierarchicalScope, reducedUserScope: string[]) => {
+const reduceUserScope = (hrScope: HierarchicalScope, reducedUserScope: string[],
+  hierarchicalRoleScoping: string) => {
   reducedUserScope.push(hrScope.id);
-  if (hrScope.children) {
+  if (hrScope.children && hierarchicalRoleScoping === 'true') {
     for (let childNode of hrScope.children) {
-      reduceUserScope(childNode, reducedUserScope);
+      reduceUserScope(childNode, reducedUserScope, hierarchicalRoleScoping);
     }
   }
 };
 
-const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string, reducedUserScope: string[]): boolean => {
+const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string,
+  reducedUserScope: string[], hierarchicalRoleScopingCheck: string): boolean => {
   if (hrScope.id === targetScope) {
     // found the target scope object, iterate and put the orgs in reducedUserScope array
     logger.debug(`Target entity match found in the user's hierarchical scope`);
-    reduceUserScope(hrScope, reducedUserScope);
+    reduceUserScope(hrScope, reducedUserScope, hierarchicalRoleScopingCheck);
     return true;
-  } else if (hrScope.children) {
+  } else if (hrScope.children && hierarchicalRoleScopingCheck === 'true') {
     for (let childNode of hrScope.children) {
-      if (checkTargetScopeExists(childNode, targetScope, reducedUserScope)) {
+      if (checkTargetScopeExists(childNode, targetScope, reducedUserScope, hierarchicalRoleScopingCheck)) {
         return true;
       }
     }
@@ -91,6 +93,8 @@ const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
 
   let roleScopeEntExists = false;
   let roleValueExists = false;
+  // by default HR scoping check is considered
+  let hierarchicalRoleScopingCheck = 'true';
   let ruleRoleValue;
   let ruleRoleScopeEntityName;
   const urns = cfg.get('authorization:urns');
@@ -104,6 +108,8 @@ const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
     } else if (attribute.id === urns.role) {
       roleValueExists = true;
       ruleRoleValue = attribute.value;
+    } else if (attribute.id === urns.hierarchicalRoleScoping) {
+      hierarchicalRoleScopingCheck = attribute.value;
     }
   }
 
@@ -132,7 +138,9 @@ const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
             break;
           }
         }
-        if (userAssocHRScope && checkTargetScopeExists(userAssocHRScope, user.scope, reducedUserScope)) {
+        // check HR scope matching for subject if hierarchicalRoleScopingCheck is 'true'
+        if (userAssocHRScope && checkTargetScopeExists(userAssocHRScope,
+          user.scope, reducedUserScope, hierarchicalRoleScopingCheck)) {
           return true;
         }
       }
@@ -292,8 +300,6 @@ export const buildFilterPermissions = (policySet: PolicySetRQ,
             if (!userSubjectMatched) {
               logger.debug(`Skipping rule as user subject and rule subject don't match`);
               continue;
-            } else if (userSubjectMatched && reducedUserScope.length === 0) {
-              reducedUserScope = [subject.scope];
             }
           }
           if (rule.effect == effect) {

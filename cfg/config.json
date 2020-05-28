@@ -190,6 +190,7 @@
       "role": "urn:restorecommerce:acs:names:role",
       "roleScopingEntity": "urn:restorecommerce:acs:names:roleScopingEntity",
       "roleScopingInstance": "urn:restorecommerce:acs:names:roleScopingInstance",
+      "hierarchicalRoleScoping": "urn:restorecommerce:acs:names:hierarchicalRoleScoping",
       "unauthenticated_user": "urn:restorecommerce:acs:names:unauthenticated-user",
       "property": "urn:restorecommerce:acs:names:model:property",
       "ownerIndicatoryEntity": "urn:restorecommerce:acs:names:ownerIndicatoryEntity",

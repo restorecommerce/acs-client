@@ -1,3 +1,20 @@
+### 0.1.8 (May 27th, 2020)
+
+- fixed typings and insert temporary IDs into resources
+
+### 0.1.7 (May 25th, 2020)
+
+- fix to remove meta data creation or updating in resource object
+
+### 0.1.6 (May 11th, 2020)
+
+- fix to support building filter permissions when HR scoping is enabled or disabled
+
+### 0.1.5 (April 29th, 2020)
+
+- fix not to apply filter if scoping instance is not defined in rule
+- updated ACS response message to include target scope
+
 ### 0.1.4 (March 5th, 2020)
 
 - flush ACS cache when rules / policies / policy sets are updated

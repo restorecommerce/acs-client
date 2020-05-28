@@ -15,6 +15,7 @@ export interface AuthZSubject {
 
 export interface HierarchicalScope {
   id: string;
+  role?: string;
   children?: HierarchicalScope[];
 }
 
