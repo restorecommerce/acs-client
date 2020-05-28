@@ -17,18 +17,6 @@ export declare const isAllowedRequest: (subject: Subject | UnauthenticatedData, 
  */
 export declare const accessRequest: (subject: Subject | ApiKey, request: Resource | Resource[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ) => Promise<Decision | PolicySetRQ>;
 /**
- * parses the input resources list and adds entity meta data to object
- * and returns resource list Resource[]
- * @param {Array<any>} resourceList input resources list
- * @param {AuthZAction} action action to be performed on resource
- * @param {string} entity target entity
- * @param {ACSContext} ctx context object
- * @param {string} resourceNamespace name space prefix for resoruce entity
- * @param {string[]} fields input fields
- * @return {Resource[]}
- */
-export declare const parseResourceList: (subject: Subject, resourceList: any[], action: AuthZAction, entity: string, resourceNamespace?: string, fields?: string[]) => Resource[];
-/**
  * Exposes the isAllowed() api of `access-control-srv` and retruns the response
  * as `Decision`.
  * @param {ACSRequest} request input authorization request

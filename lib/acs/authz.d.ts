@@ -33,11 +33,6 @@ export declare class ACSAuthZ implements IAuthZ {
      */
     isAllowed(request: Request<AuthZTarget, AuthZContext>): Promise<Decision>;
     /**
-     * Read the resource's metadata on `modify`.
-     * @param resources
-     */
-    private getResourcesWithMetadata;
-    /**
     * Perform request to access-control-srv
     * @param subject
     * @param action
