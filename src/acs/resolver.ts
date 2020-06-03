@@ -110,7 +110,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
     && (ctx as any).req.headers['expected-authorization']
     && (ctx as any).req.headers['authorization'] === (ctx as any).req.headers['expected-authorization']) {
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
-      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
+      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE || action === AuthZAction.DROP) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
       // make auth ctx uanth since authorization is disabled
@@ -137,7 +137,7 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
   if (!authzEnabled) {
     // if action is write
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
-      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
+      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE || action === AuthZAction.DROP) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
       // make auth ctx uanth since authorization is disabled
@@ -236,7 +236,8 @@ export const accessRequest = async (action: AuthZAction, request: Resource[] | R
   // default deny
   let decision: Decision = Decision.DENY;
   // for write operations
-  if (!_.isEmpty(resources) || action == AuthZAction.DELETE || action == AuthZAction.EXECUTE) {
+  if (!_.isEmpty(resources) || action === AuthZAction.DELETE ||
+    action === AuthZAction.EXECUTE || action === AuthZAction.DROP) {
     // authorization
     decision = await isAllowedRequest(ctx, action, resources);
 

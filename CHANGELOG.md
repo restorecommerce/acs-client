@@ -1,3 +1,7 @@
+### 0.1.9 (June 3rd, 2020)
+
+- added DROP action
+
 ### 0.1.8 (May 27th, 2020)
 
 - fixed typings and insert temporary IDs into resources
