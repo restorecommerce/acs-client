@@ -1,3 +1,7 @@
+### 0.1.10 (June 3rd, 2020)
+
+- fixed drop action to use correct attribute identifier
+
 ### 0.1.9 (June 3rd, 2020)
 
 - added DROP action

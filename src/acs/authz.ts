@@ -83,7 +83,7 @@ const formatResourceType = (type: string, namespacePrefix?: string): string => {
 export const createResourceTarget = (resources: Resource[], action: AuthZAction | AuthZAction[]) => {
   const flattened: Attribute[] = [];
   resources.forEach((resource) => {
-    if (action != 'EXECUTE') {
+    if (action != AuthZAction.EXECUTE && action != AuthZAction.DROP) {
       const resourceType = formatResourceType(resource.type, resource.namespace);
       if (resourceType) {
         flattened.push({
@@ -258,7 +258,7 @@ export class ACSAuthZ implements IAuthZ {
     }));
 
     if (request.target.action == AuthZAction.CREATE || request.target.action === AuthZAction.MODIFY ||
-      request.target.action === AuthZAction.DELETE || request.target.action === AuthZAction.DROP) {
+      request.target.action === AuthZAction.DELETE) {
       // insert temporary IDs into resources which are yet to be created if not present in input
       let counter = 0;
       resources = _.cloneDeep(request.target.resources).map((resource) => {
