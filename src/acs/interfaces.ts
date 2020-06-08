@@ -4,6 +4,7 @@ export enum AuthZAction {
   MODIFY = 'MODIFY',
   DELETE = 'DELETE',
   EXECUTE = 'EXECUTE',
+  DROP = 'DROP',
   ALL = '*'
 }
 

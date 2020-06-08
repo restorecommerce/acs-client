@@ -126,7 +126,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
   if (!authzEnabled) {
     // if action is write
     if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
-      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
+      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE || action === AuthZAction.DROP) {
       return Decision.PERMIT;
     } else if (action === AuthZAction.READ) {
       subject = { unauthenticated: true };
@@ -228,7 +228,8 @@ export const accessRequest = async (subject: Subject | ApiKey,
   // default deny
   let decision: Decision = Decision.DENY;
   // for write operations
-  if (!_.isEmpty(resources) || action == AuthZAction.DELETE || action == AuthZAction.EXECUTE) {
+  if (!_.isEmpty(resources) || action === AuthZAction.DELETE ||
+    action === AuthZAction.EXECUTE || action === AuthZAction.DROP) {
     // authorization
     decision = await isAllowedRequest(subject as Subject, resources, action, authZ);
 
