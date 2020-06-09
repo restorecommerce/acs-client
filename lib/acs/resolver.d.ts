@@ -10,12 +10,14 @@ export declare const isAllowedRequest: (subject: Subject | UnauthenticatedData, 
  * or policy set reverse query `PolicySetRQ` depending on the requeste operation `isAllowed()` or
  * `whatIsAllowed()` respectively.
  * @param {Subject | ApiKey} subject Contains subject information or ApiKey
- * @param {Resource | Resource[] | ReadRequest} request request object either Resource or ReadRequest
+ * @param {any | any[] | ReadRequest} request request object of type any for resource or ReadRequest
  * @param {AuthZAction} action Action to be performed on resource
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
+ * @param {string} entity entity name optional
+ * @param {string} resourceNameSpace resource name space optional
  * @returns {Decision | PolicySetRQ}
  */
-export declare const accessRequest: (subject: Subject | ApiKey, request: Resource | Resource[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ) => Promise<Decision | PolicySetRQ>;
+export declare const accessRequest: (subject: Subject | ApiKey, request: any, action: AuthZAction, authZ: ACSAuthZ, entity?: string, resourceNameSpace?: string) => Promise<Decision | PolicySetRQ>;
 /**
  * Exposes the isAllowed() api of `access-control-srv` and retruns the response
  * as `Decision`.

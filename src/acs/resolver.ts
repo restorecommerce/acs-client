@@ -7,7 +7,7 @@ import { AuthZAction } from './interfaces';
 import logger from '../logger';
 import { errors, cfg } from '../config';
 import { buildFilterPermissions } from '../utils';
-import { Client, toStruct } from '@restorecommerce/grpc-client';
+import { Client } from '@restorecommerce/grpc-client';
 import { UnAuthZ, ACSAuthZ } from './authz';
 import { Unauthenticated, PermissionDenied } from './errors';
 import { toObject } from './../utils';
@@ -86,14 +86,16 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
  * or policy set reverse query `PolicySetRQ` depending on the requeste operation `isAllowed()` or
  * `whatIsAllowed()` respectively.
  * @param {Subject | ApiKey} subject Contains subject information or ApiKey
- * @param {Resource | Resource[] | ReadRequest} request request object either Resource or ReadRequest
+ * @param {any | any[] | ReadRequest} request request object of type any for resource or ReadRequest
  * @param {AuthZAction} action Action to be performed on resource
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
+ * @param {string} entity entity name optional
+ * @param {string} resourceNameSpace resource name space optional
  * @returns {Decision | PolicySetRQ}
  */
 export const accessRequest = async (subject: Subject | ApiKey,
-  request: Resource[] | Resource | ReadRequest, action: AuthZAction,
-  authZ: ACSAuthZ): Promise<Decision | PolicySetRQ> => {
+  request: any | any[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ, entity?: string,
+  resourceNameSpace?: string): Promise<Decision | PolicySetRQ> => {
   // TODO: add command to sync dynamic apikey
   let reqApiKey = (subject as ApiKey).api_key;
   // if apiKey mode is enabled
@@ -210,11 +212,6 @@ export const accessRequest = async (subject: Subject | ApiKey,
         }
       }
     }
-    if (_.isArray(permissionArguments.filter)) {
-      permissionArguments.filter = toStruct(permissionArguments.filter, true);
-    } else {
-      permissionArguments.filter = toStruct(permissionArguments.filter);
-    }
     Object.assign(request.args, permissionArguments);
     return policySet;
   }
@@ -227,11 +224,21 @@ export const accessRequest = async (subject: Subject | ApiKey,
 
   // default deny
   let decision: Decision = Decision.DENY;
+  let resourceList = [];
   // for write operations
   if (!_.isEmpty(resources) || action === AuthZAction.DELETE ||
     action === AuthZAction.EXECUTE || action === AuthZAction.DROP) {
+    // add type and namespace
+    for (let resource of resources) {
+      resourceList.push({
+        fields: _.keys(resource),
+        instance: resource,
+        type: entity,
+        namespace: resourceNameSpace
+      });
+    }
     // authorization
-    decision = await isAllowedRequest(subject as Subject, resources, action, authZ);
+    decision = await isAllowedRequest(subject as Subject, resourceList, action, authZ);
 
     if (decision && decision != Decision.PERMIT && authzEnforced) {
       let details = '';
@@ -241,7 +248,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
         details = `Subject:${requestingUserName_ID} does not have access to requested target scope ${targetScope}`;
       }
       const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
-        `resource:${resources[0].type}, action:${action}, target_scope:${targetScope}; the response was ${decision}`;
+        `resource:${resourceList[0].type}, action:${action}, target_scope:${targetScope}; the response was ${decision}`;
       logger.verbose(msg);
       logger.verbose('Details:', { details });
       throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
@@ -255,7 +262,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
       details = `Subject:${requestingUserName_ID} does not have access to requested target scope ${targetScope}`;
     }
     logger.verbose(`Access not allowed for request with subject:${requestingUserName_ID}, ` +
-      `resource:${resources[0].type}, action:${action}, target_scope:${targetScope}; the response was ${decision}`);
+      `resource:${resourceList[0].type}, action:${action}, target_scope:${targetScope}; the response was ${decision}`);
     logger.verbose(`${details}, Overriding the ACS result as ACS enforce config is disabled`);
     decision = Decision.PERMIT;
   }
@@ -274,7 +281,6 @@ export const isAllowed = async (request: ACSRequest,
   const response = await authZ.acs.isAllowed(request);
 
   if (_.isEmpty(response) || _.isEmpty(response.data)) {
-    console.log(response.error);
     logger.error('Unexpected empty response from ACS');
   } else if (response.data.decision) {
     return response.data.decision;

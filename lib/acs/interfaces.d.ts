@@ -4,12 +4,13 @@ export declare enum AuthZAction {
     MODIFY = "MODIFY",
     DELETE = "DELETE",
     EXECUTE = "EXECUTE",
+    DROP = "DROP",
     ALL = "*"
 }
 export interface AuthZSubject {
     id: string;
     role_associations: RoleAssociation[];
-    hierarchical_scope?: HierarchicalScope[];
+    hierarchical_scopes?: HierarchicalScope[];
 }
 export interface HierarchicalScope {
     id: string;

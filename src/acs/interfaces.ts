@@ -11,7 +11,7 @@ export enum AuthZAction {
 export interface AuthZSubject {
   id: string; // entity ('user', 'service', etc) ID
   role_associations: RoleAssociation[];
-  hierarchical_scope?: HierarchicalScope[];
+  hierarchical_scopes?: HierarchicalScope[];
 }
 
 export interface HierarchicalScope {

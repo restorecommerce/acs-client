@@ -122,32 +122,27 @@ interface serverRule {
   output: any
 }
 
-export const parseResourceList = (resourceList: Array<any>, action: AuthZAction,
-  entity: string, ctx: ACSContext, resourceNamespace?: string, fields?: string[]): any[] => {
+const updateMetaData = (resourceList: Array<any>) => {
+  if (!_.isArray(resourceList)) {
+    resourceList = [resourceList];
+  }
   return resourceList.map((resource): any => {
-    let instance = JSON.parse(JSON.stringify(resource));
-    if (action == AuthZAction.CREATE || action == AuthZAction.MODIFY || action == AuthZAction.DELETE) {
-      if (!instance.meta) {
-        instance.meta = {};
-      }
-      instance.meta.owner = [
-        {
-          id: 'urn:restorecommerce:acs:names:ownerIndicatoryEntity',
-          value: 'urn:test:acs:model:organization.Organization'
-        },
-        {
-          id: 'urn:restorecommerce:acs:names:ownerInstance',
-          value: 'targetScope'
-        }];
+    if (!resource.meta) {
+      resource.meta = {};
     }
-    return {
-      fields: fields || _.keys(instance),
-      instance,
-      type: entity,
-      namespace: resourceNamespace
-    };
+    resource.meta.owner = [
+      {
+        id: 'urn:restorecommerce:acs:names:ownerIndicatoryEntity',
+        value: 'urn:test:acs:model:organization.Organization'
+      },
+      {
+        id: 'urn:restorecommerce:acs:names:ownerInstance',
+        value: 'targetScope'
+      }
+    ];
+    return resource;
   });
-};
+}
 
 const startGrpcMockServer = async (rules: serverRule[]) => {
   // Create a mock ACS server to expose isAllowed and whatIsAllowed
@@ -209,16 +204,16 @@ describe('testing acs-client', () => {
         description: 'This is a test description'
       }];
       let subject = {
-        name: 'test_user',
+        id: 'test_user_id',
         scope: 'targetScope',
         unauthenticated: true
       };
-      // convert data and call accessRequest(), the response is from mock ACS
-      let data = parseResourceList(subject, testResource, AuthZAction.CREATE, 'Test');
+      testResource = updateMetaData(testResource);
       let response;
       let error;
       try {
-        response = await accessRequest(subject, data, AuthZAction.CREATE, authZ) as Decision;
+        // call accessRequest(), the response is from mock ACS
+        response = await accessRequest(subject, testResource, AuthZAction.CREATE, authZ, 'Test') as Decision;
       } catch (err) {
         error = err;
       }
@@ -226,7 +221,7 @@ describe('testing acs-client', () => {
       should.exist(error);
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
-      error.details.should.equal('Access not allowed for request with subject:test_user, resource:Test, action:CREATE, target_scope:targetScope; the response was DENY');
+      error.details.should.equal('Access not allowed for request with subject:test_user_id, resource:Test, action:CREATE, target_scope:targetScope; the response was DENY');
       error.code.should.equal('403');
       stopGrpcMockServer();
     });
@@ -250,9 +245,9 @@ describe('testing acs-client', () => {
           }
         ]
       };
-      // convert data and call accessRequest(), the response is from mock ACS
-      let data = parseResourceList(subject, testResource, AuthZAction.CREATE, 'Test');
-      const response = await accessRequest(subject, data, AuthZAction.CREATE, authZ) as Decision;
+      testResource = updateMetaData(testResource);
+      // call accessRequest(), the response is from mock ACS
+      const response = await accessRequest(subject, testResource, AuthZAction.CREATE, authZ, 'Test') as Decision;
       should.exist(response);
       response.should.equal('PERMIT');
       stopGrpcMockServer();
@@ -270,7 +265,6 @@ describe('testing acs-client', () => {
       } as ReadRequest;
       let subject = {
         id: 'test_user_id',
-        name: 'test_user',
         scope: 'targetScope',
         role_associations: [
           {
@@ -288,7 +282,7 @@ describe('testing acs-client', () => {
       should.exist(error);
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
-      error.details.should.equal('Access not allowed for request with subject:test_user, resource:Test, action:READ, target_scope:targetScope; the response was DENY');
+      error.details.should.equal('Access not allowed for request with subject:test_user_id, resource:Test, action:READ, target_scope:targetScope; the response was DENY');
       error.code.should.equal('403');
       stopGrpcMockServer();
     });
@@ -305,29 +299,30 @@ describe('testing acs-client', () => {
           database: 'postgres'
         } as ReadRequest;
         // user ctx data updated in session
-        let ctx = ({
-          session: {
-            data: {
-              id: 'test_user_id',
-              name: 'test_user',
-              scope: 'targetScope',
-              role_associations: [
+        let subject = {
+          id: 'test_user_id',
+          scope: 'targetScope',
+          role_associations: [
+            {
+              role: 'test-role',
+              attributes: [
                 {
-                  role: 'test-role',
-                  attributes: [
-                    {
-                      id: 'urn:restorecommerce:acs:names:roleScopingEntity',
-                      value: 'urn:test:acs:model:organization.Organization'
-                    },
-                    {
-                      id: 'urn:restorecommerce:acs:names:roleScopingInstance',
-                      value: 'targetScope'
-                    }
-                  ]
+                  id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+                  value: 'urn:test:acs:model:organization.Organization'
+                },
+                {
+                  id: 'urn:restorecommerce:acs:names:roleScopingInstance',
+                  value: 'targetScope'
                 }
               ]
             }
-          ]
+          ],
+          hierarchical_scopes: [{
+            id: 'targetScope',
+            children: [{
+              id: 'targetSubScope'
+            }]
+          }]
         };
         // call accessRequest(), the response is from mock ACS
         await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
@@ -349,43 +344,35 @@ describe('testing acs-client', () => {
           database: 'postgres'
         } as ReadRequest;
         // user ctx data updated in session
-        let ctx = ({
-          session: {
-            data: {
-              id: 'test_user_id',
-              name: 'test_user',
-              scope: 'targetSubScope',
-              role_associations: [
+        let subject = {
+          id: 'test_user_id',
+          scope: 'targetSubScope',
+          role_associations: [
+            {
+              role: 'test-role',
+              attributes: [
                 {
-                  role: 'test-role',
-                  attributes: [
-                    {
-                      id: 'urn:restorecommerce:acs:names:roleScopingEntity',
-                      value: 'urn:test:acs:model:organization.Organization'
-                    },
-                    {
-                      id: 'urn:restorecommerce:acs:names:roleScopingInstance',
-                      value: 'targetScope'
-                    }
-                  ]
-                }
-              ],
-              hierarchical_scope: [
+                  id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+                  value: 'urn:test:acs:model:organization.Organization'
+                },
                 {
-                  id: 'targetScope',
-                  children: [{
-                    id: 'targetSubScope'
-                  }]
+                  id: 'urn:restorecommerce:acs:names:roleScopingInstance',
+                  value: 'targetScope'
                 }
               ]
             }
-          }
-        }) as ACSContext;
-        // update authZ(client connection object) object in ctx - this
-        // is done via middleware in the calling application
-        ctx = Object.assign({}, ctx, authZ);
+          ],
+          hierarchical_scopes: [
+            {
+              id: 'targetScope',
+              children: [{
+                id: 'targetSubScope'
+              }]
+            }
+          ]
+        };
         // call accessRequest(), the response is from mock ACS
-        await accessRequest(AuthZAction.READ, input, ctx) as PolicySetRQ;
+        await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
         // verify input is modified to enforce the applicapble poilicies
         const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetSubScope' };
         input.args.filter[0].should.deepEqual(expectedFilterResponse);
@@ -405,52 +392,44 @@ describe('testing acs-client', () => {
         database: 'postgres'
       } as ReadRequest;
       // user ctx data updated in session
-      let ctx = ({
-        session: {
-          data: {
-            id: 'test_user_id',
-            name: 'test_user',
-            scope: 'targetSubScope',
-            role_associations: [
+      let subject = {
+        id: 'test_user_id',
+        scope: 'targetSubScope',
+        role_associations: [
+          {
+            role: 'test-role',
+            attributes: [
               {
-                role: 'test-role',
-                attributes: [
-                  {
-                    id: 'urn:restorecommerce:acs:names:roleScopingEntity',
-                    value: 'urn:test:acs:model:organization.Organization'
-                  },
-                  {
-                    id: 'urn:restorecommerce:acs:names:roleScopingInstance',
-                    value: 'targetScope'
-                  }
-                ]
-              }
-            ],
-            hierarchical_scope: [
+                id: 'urn:restorecommerce:acs:names:roleScopingEntity',
+                value: 'urn:test:acs:model:organization.Organization'
+              },
               {
-                id: 'targetScope',
-                children: [{
-                  id: 'targetSubScope'
-                }]
+                id: 'urn:restorecommerce:acs:names:roleScopingInstance',
+                value: 'targetScope'
               }
             ]
           }
-        }
-      }) as ACSContext;
-      // update authZ(client connection object) object in ctx - this
-      // is done via middleware in the calling application
-      ctx = Object.assign({}, ctx, authZ);
+        ],
+        hierarchical_scopes: [
+          {
+            id: 'targetScope',
+            children: [{
+              id: 'targetSubScope'
+            }]
+          }
+        ]
+      };
       // call accessRequest(), the response is from mock ACS
       let error;
       try {
-        await accessRequest(AuthZAction.READ, input, ctx) as PolicySetRQ;
+        await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
       } catch (err) {
         error = err;
       }
       should.exist(error);
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
-      error.details.should.equal('Access not allowed for request with subject:test_user, resource:Test, action:READ, target_scope:targetSubScope; the response was DENY');
+      error.details.should.equal('Access not allowed for request with subject:test_user_id, resource:Test, action:READ, target_scope:targetSubScope; the response was DENY');
       error.code.should.equal('403');
       stopGrpcMockServer();
       // enable HR scoping for permitRule
