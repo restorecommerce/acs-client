@@ -7,7 +7,7 @@ import { AuthZAction } from './interfaces';
 import logger from '../logger';
 import { errors, cfg } from '../config';
 import { buildFilterPermissions } from '../utils';
-import { Client } from '@restorecommerce/grpc-client';
+import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { UnAuthZ, ACSAuthZ } from './authz';
 import { Unauthenticated, PermissionDenied } from './errors';
 import { toObject } from './../utils';
@@ -211,6 +211,11 @@ export const accessRequest = async (subject: Subject | ApiKey,
           permissionArguments.filter.push(filter);
         }
       }
+    }
+    if (_.isArray(permissionArguments.filter)) {
+      permissionArguments.filter = toStruct(permissionArguments.filter, true);
+    } else {
+      permissionArguments.filter = toStruct(permissionArguments.filter);
     }
     Object.assign(request.args, permissionArguments);
     return policySet;

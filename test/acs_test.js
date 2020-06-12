@@ -17,6 +17,7 @@ const interfaces_1 = require("../lib/acs/interfaces");
 const authz_1 = require("../lib/acs/authz");
 const logger_1 = require("../lib/logger");
 const _ = require("lodash");
+const lib_1 = require("../lib");
 let authZ;
 let mockServer;
 const permitRule = {
@@ -334,7 +335,8 @@ describe('testing acs-client', () => {
             yield resolver_1.accessRequest(subject, input, interfaces_1.AuthZAction.READ, authZ);
             // verify input is modified to enforce the applicapble poilicies
             const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetScope' };
-            input.args.filter[0].should.deepEqual(expectedFilterResponse);
+            const actualResponse = lib_1.toObject(input.args.filter, true);
+            actualResponse[0].should.deepEqual(expectedFilterResponse);
             stopGrpcMockServer();
         }));
         it('Should PERMIT reading Test resource (PERMIT rule) with HR scoping enabled and verify input filter ' +
@@ -381,7 +383,8 @@ describe('testing acs-client', () => {
             yield resolver_1.accessRequest(subject, input, interfaces_1.AuthZAction.READ, authZ);
             // verify input is modified to enforce the applicapble poilicies
             const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetSubScope' };
-            input.args.filter[0].should.deepEqual(expectedFilterResponse);
+            const actualFilterResponse = lib_1.toObject(input.args.filter, true);
+            actualFilterResponse[0].should.deepEqual(expectedFilterResponse);
             stopGrpcMockServer();
         }));
         it('Should DENY reading Test resource (PERMIT rule) with HR scoping disabled', () => __awaiter(void 0, void 0, void 0, function* () {

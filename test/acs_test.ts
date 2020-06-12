@@ -6,6 +6,7 @@ import { AuthZAction, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/inter
 import { initAuthZ, ACSAuthZ } from '../lib/acs/authz';
 import logger from '../lib/logger';
 import * as _ from 'lodash';
+import { toObject } from '../lib';
 
 let authZ: ACSAuthZ;
 let mockServer: any;
@@ -328,7 +329,8 @@ describe('testing acs-client', () => {
         await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
         // verify input is modified to enforce the applicapble poilicies
         const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetScope' };
-        input.args.filter[0].should.deepEqual(expectedFilterResponse);
+        const actualResponse = toObject(input.args.filter, true);
+        actualResponse[0].should.deepEqual(expectedFilterResponse);
         stopGrpcMockServer();
       });
     it('Should PERMIT reading Test resource (PERMIT rule) with HR scoping enabled and verify input filter ' +
@@ -375,7 +377,8 @@ describe('testing acs-client', () => {
         await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
         // verify input is modified to enforce the applicapble poilicies
         const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetSubScope' };
-        input.args.filter[0].should.deepEqual(expectedFilterResponse);
+        const actualFilterResponse = toObject(input.args.filter, true);
+        actualFilterResponse[0].should.deepEqual(expectedFilterResponse);
         stopGrpcMockServer();
       });
     it('Should DENY reading Test resource (PERMIT rule) with HR scoping disabled', async () => {
