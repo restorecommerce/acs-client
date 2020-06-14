@@ -181,7 +181,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
         `config is disabled overriding the ACS result`);
     }
     // extend input filter to enforce applicable policies
-    const permissionArguments = buildFilterPermissions(policySet, subject as Subject, request.database);
+    let permissionArguments = buildFilterPermissions(policySet, subject as Subject, request.database);
     if (!permissionArguments && authzEnforced) {
       const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
         `resource:${resourceName}, action:${action}, target_scope:${targetScope}; the response was DENY`;
@@ -210,6 +210,10 @@ export const accessRequest = async (subject: Subject | ApiKey,
           }
           permissionArguments.filter.push(filter);
         }
+      }else {
+        permissionArguments = {
+          filter: request.args.filter
+        };
       }
     }
     if (_.isArray(permissionArguments.filter)) {
