@@ -197,7 +197,9 @@ export const accessRequest = async (subject: Subject | ApiKey,
         `but since ACS enforcement config is disabled overriding the ACS result`);
     }
 
-    if (request.args && request.args.filter) {
+    // below fix is to convert the input filter to object only if it is already a structrue
+    // i.e. struct filter containing `fileds` property
+    if (request.args && request.args.filter && request.args.filter.fields) {
       if (_.isArray(request.args.filter)) {
         request.args.filter = toObject(request.args.filter, true);
       } else {
