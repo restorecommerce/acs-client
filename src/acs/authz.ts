@@ -256,6 +256,7 @@ export class ACSAuthZ implements IAuthZ {
         return resource;
       });
     }
+    authZRequest.context.subject = this.encode(subject);
     authZRequest.context.resources = this.encode(resources);
 
     // for isAllowed we use the subject, action and resource fields .i.e. reqeust Target
