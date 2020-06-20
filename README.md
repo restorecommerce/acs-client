@@ -11,11 +11,11 @@ Features:
 
 - A generic client for the [access-control-srv](https://github.com/restorecommerce/access-control-srv).
 - It uses [grpc-client](https://github.com/restorecommerce/grpc-client) to access the exposed API via its gRPC interface.
-- This client constructs the [request](https://github.com/restorecommerce/acs-client/#api-client-interface) object expected by `access-control-srv` when requesting access to a particular [resource](https://github.com/restorecommerce/acs-client/tree/acs-tests#accessrequest) with a specific action on it.
-- This client supports access request for both methods [isAllowed](https://github.com/restorecommerce/access-control-srv#isallowed) and [whatIsAllowed](https://github.com/restorecommerce/access-control-srv#whatisallowed) exposed by `access-control-srv`.
+- It constructs the [request](https://github.com/restorecommerce/acs-client/#api-client-interface) object expected by `access-control-srv` when requesting access to a particular [resource](https://github.com/restorecommerce/acs-client/tree/acs-tests#accessrequest) with a specific action on it.
+- It supports access requests for both methods [isAllowed](https://github.com/restorecommerce/access-control-srv#isallowed) and [whatIsAllowed](https://github.com/restorecommerce/access-control-srv#whatisallowed) exposed by `access-control-srv`.
+- It provides an optional caching mechanism for the two operations based on a [redis](https://redis.io/) store.
 - It evaluates the [condition](https://github.com/restorecommerce/access-control-srv#rule) for `whatIsAllowed` requests.
 - It returns the decision made by the ACS.
-- It provides an optional caching mechanism for `isAllowed` and `whatIsAllowed` request operations using [redis](https://redis.io/).
 
 ## Configuration
 
