@@ -310,7 +310,6 @@ export class ACSAuthZ implements IAuthZ {
       resources: [],
       security: this.encode(request.context.security)
     };
-    let resources = request.target.resources;
     const subject = request.target.subject;
 
     let cachePrefix = 'ACSAuthZ';
@@ -327,7 +326,6 @@ export class ACSAuthZ implements IAuthZ {
     authZRequest.context.subject = this.encode(_.merge(subject, {
       hierarchical_scope: hierarchicalScope
     }));
-    authZRequest.context.resources = this.encode(resources);
 
     const response = await getOrFill(authZRequest, async (req) => {
       return this.acs.whatIsAllowed(authZRequest);
