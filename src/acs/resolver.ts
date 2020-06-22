@@ -139,7 +139,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
     }
   }
 
-  if (_.isEmpty(subject)) {
+  if (_.isEmpty(subject) || !(subject as Subject).id) {
     throw new Unauthenticated(errors.USER_NOT_LOGGED_IN.message, errors.USER_NOT_LOGGED_IN.code);
   }
 
