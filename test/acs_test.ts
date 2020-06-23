@@ -223,7 +223,7 @@ describe('testing acs-client', () => {
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
       error.details.should.equal('Access not allowed for request with subject:test_user_id, resource:Test, action:CREATE, target_scope:targetScope; the response was DENY');
-      error.code.should.equal('403');
+      error.code.should.equal(403);
       stopGrpcMockServer();
     });
     it('Should PERMIT creating Test resource with valid user Ctx', async () => {
@@ -284,7 +284,7 @@ describe('testing acs-client', () => {
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
       error.details.should.equal('Access not allowed for request with subject:test_user_id, resource:Test, action:READ, target_scope:targetScope; the response was DENY');
-      error.code.should.equal('403');
+      error.code.should.equal(403);
       stopGrpcMockServer();
     });
     it('Should PERMIT reading Test resource (PERMIT rule) and verify input filter ' +
@@ -433,7 +433,7 @@ describe('testing acs-client', () => {
       error.name.should.equal('PermissionDenied');
       error.message.should.equal('permission denied');
       error.details.should.equal('Access not allowed for request with subject:test_user_id, resource:Test, action:READ, target_scope:targetSubScope; the response was DENY');
-      error.code.should.equal('403');
+      error.code.should.equal(403);
       stopGrpcMockServer();
       // enable HR scoping for permitRule
       permitRule.target.subject[2].value = 'true';
