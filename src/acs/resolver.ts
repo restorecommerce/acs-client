@@ -213,7 +213,10 @@ export const accessRequest = async (subject: Subject | ApiKey,
           permissionArguments.filter.push(filter);
         }
       } else {
-        permissionArguments.filter = request.args.filter;
+        if (!_.isArray(permissionArguments.filter)) {
+          permissionArguments.filter = [permissionArguments.filter];
+        }
+        permissionArguments.filter.push(request.args.filter);
       }
     }
     if (_.isArray(permissionArguments.filter)) {
