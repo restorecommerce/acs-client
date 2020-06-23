@@ -171,7 +171,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
       const details = 'no matching policy/rule could be found';
       logger.verbose(msg);
       logger.verbose('Details:', { details });
-      throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
+      throw new PermissionDenied(msg, Number(errors.ACTION_NOT_ALLOWED.code));
     }
 
     if (_.isEmpty(policySet) && !authzEnforced) {
@@ -188,7 +188,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
       const details = `Subject:${requestingUserName_ID} does not have access to target scope ${targetScope}}`;
       logger.verbose(msg);
       logger.verbose('Details:', { details });
-      throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
+      throw new PermissionDenied(msg, Number(errors.ACTION_NOT_ALLOWED.code));
     }
 
     if (!permissionArguments && !authzEnforced) {
@@ -262,7 +262,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
         `resource:${resourceList[0].type}, action:${action}, target_scope:${targetScope}; the response was ${decision}`;
       logger.verbose(msg);
       logger.verbose('Details:', { details });
-      throw new PermissionDenied(msg, errors.ACTION_NOT_ALLOWED.code);
+      throw new PermissionDenied(msg, Number(errors.ACTION_NOT_ALLOWED.code));
     }
   }
   if (!authzEnforced && decision && decision != Decision.PERMIT) {

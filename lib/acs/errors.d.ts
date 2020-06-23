@@ -5,8 +5,8 @@ export declare class Unauthenticated extends Error {
     details: string;
     name: string;
     message: string;
-    code: string;
-    constructor(details: string, code: string);
+    code: number;
+    constructor(details: string, code: number);
 }
 /**
 * PermissionDenied indicates the caller does not have permission to
@@ -16,6 +16,6 @@ export declare class PermissionDenied extends Error {
     details: string;
     name: string;
     message: string;
-    code: string;
-    constructor(details: string, code: string);
+    code: number;
+    constructor(details: string, code: number);
 }

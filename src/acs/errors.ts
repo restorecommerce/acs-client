@@ -5,8 +5,8 @@ export class Unauthenticated extends Error {
   details: string;
   name: string;
   message: string;
-  code: string;
-  constructor(details: string, code: string) {
+  code: number;
+  constructor(details: string, code: number) {
     super();
     this.name = this.constructor.name;
     this.message = 'unauthenticated';
@@ -23,8 +23,8 @@ export class PermissionDenied extends Error {
   details: string;
   name: string;
   message: string;
-  code: string;
-  constructor(details: string, code: string) {
+  code: number;
+  constructor(details: string, code: number) {
     super();
     this.name = this.constructor.name;
     this.message = 'permission denied';
