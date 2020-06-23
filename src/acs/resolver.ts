@@ -199,7 +199,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
 
     // below fix is to convert the input filter to object only if it is already a structrue
     // i.e. struct filter containing `fileds` property
-    if (request.args && request.args.filter && request.args.filter.fields) {
+    if (request.args && request.args.filter && !_.isEmpty(request.args.filter.fields)) {
       if (_.isArray(request.args.filter)) {
         request.args.filter = toObject(request.args.filter, true);
       } else {
@@ -212,10 +212,8 @@ export const accessRequest = async (subject: Subject | ApiKey,
           }
           permissionArguments.filter.push(filter);
         }
-      }else {
-        permissionArguments = {
-          filter: request.args.filter
-        };
+      } else {
+        permissionArguments.filter = request.args.filter;
       }
     }
     if (_.isArray(permissionArguments.filter)) {
