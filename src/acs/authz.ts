@@ -249,7 +249,7 @@ export class ACSAuthZ implements IAuthZ {
       // insert temporary IDs into resources which are yet to be created if not present in input
       let counter = 0;
       resources = _.cloneDeep(request.target.resources).map((resource) => {
-        if (!resource.instance.id) {
+        if (_.isEmpty(resource.instance.id)) {
           resource.instance.id = String(counter++);
           resource.fields.push('id');
         }
@@ -354,7 +354,7 @@ export class ACSAuthZ implements IAuthZ {
         // insert temporary IDs into resources which are yet to be created
         let counter = 0;
         resources = _.cloneDeep(request.target.resources).map((resource) => {
-          if (!resource.instance.id) {
+          if (_.isEmpty(resource.instance.id)) {
             resource.instance.id = String(counter++);
             resource.fields.push('id');
           }
