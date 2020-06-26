@@ -250,7 +250,11 @@ export const accessRequest = async (subject: Subject | ApiKey,
       });
     }
     // authorization
-    decision = await isAllowedRequest(subject as Subject, resourceList, action, authZ);
+    try {
+      decision = await isAllowedRequest(subject as Subject, resourceList, action, authZ);
+    } catch (err) {
+      throw err;
+    }
 
     if (decision && decision != Decision.PERMIT && authzEnforced) {
       let details = '';

@@ -173,7 +173,7 @@ export class UnAuthZ implements IAuthZ {
 
     if (response.error) {
       logger.verbose('Error while requesting authorization to ACS...', { error: response.error.message });
-      throw new Error('Error while requesting authorization to ACS');
+      throw response.error;
     }
 
     return Decision.DENY;
@@ -199,7 +199,7 @@ export class UnAuthZ implements IAuthZ {
 
     if (response.error) {
       logger.verbose('Error while requesting authorization to ACS...', { error: response.error.message });
-      throw new Error('Error while requesting authorization to ACS');
+      throw response.error;
     }
     return (response.data.policy_sets || []).length > 0 ? response.data.policy_sets[0] : {};
   }
@@ -278,7 +278,7 @@ export class ACSAuthZ implements IAuthZ {
 
     if (response.error) {
       logger.verbose('Error while requesting authorization to ACS...', { error: response.error.message });
-      throw new Error('Error while requesting authorization to ACS');
+      throw response.error;
     }
 
     return Decision.DENY;
@@ -319,7 +319,7 @@ export class ACSAuthZ implements IAuthZ {
 
     if (response.error) {
       logger.verbose('Error while requesting authorization to ACS...', { error: response.error.message });
-      throw new Error('Error while requesting authorization to ACS');
+      throw response.error;
     }
     return (response.data.policy_sets || []).length > 0 ? response.data.policy_sets[0] : {};
   }
