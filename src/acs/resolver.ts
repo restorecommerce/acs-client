@@ -102,16 +102,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
   if (reqApiKey) {
     let configuredApiKey = cfg.get('authentication:apiKey');
     if (configuredApiKey && configuredApiKey === reqApiKey) {
-      if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
-        action === AuthZAction.DELETE || action === AuthZAction.EXECUTE) {
-        return Decision.PERMIT;
-      } else if (action === AuthZAction.READ) {
-        subject = { unauthenticated: true };
-        return await whatIsAllowedRequest(subject, [{
-          type: (request as ReadRequest).entity,
-          namespace: (request as ReadRequest).namespace
-        }], [action], authZ);
-      }
+      return Decision.PERMIT;
     }
   }
   let authzEnabled = cfg.get('authorization:enabled');
@@ -126,17 +117,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
   }
   // if authorization is disabled
   if (!authzEnabled) {
-    // if action is write
-    if (action === AuthZAction.CREATE || action === AuthZAction.MODIFY ||
-      action === AuthZAction.DELETE || action === AuthZAction.EXECUTE || action === AuthZAction.DROP) {
-      return Decision.PERMIT;
-    } else if (action === AuthZAction.READ) {
-      subject = { unauthenticated: true };
-      return await whatIsAllowedRequest(subject, [{
-        type: (request as ReadRequest).entity,
-        namespace: (request as ReadRequest).namespace
-      }], [action], authZ);
-    }
+    return Decision.PERMIT;
   }
 
   if (_.isEmpty(subject) || !(subject as Subject).id) {
