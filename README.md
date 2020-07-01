@@ -26,7 +26,7 @@ orgScope: 'urn:\<organization\>:acs:model:<Entity_Name>'
 
 ex: orgScope: 'urn:restorecommerce:acs:model:organization.Organization'
 
-The applicable policies / rules can be enforced on the request using [`enforce`](cfg/config.json#L88) configuration.
+The applicable policies / rules can be enforced on the request using [`enforce`](cfg/config.json#L185) configuration.
 The cache configurations for `redis` can be set using [`authorization:cache`](cfg/config.json#L121) configuration.
 
 ## API
