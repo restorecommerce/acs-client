@@ -28,7 +28,7 @@ ex: `orgScope: urn:restorecommerce:acs:model:organization.Organization`
 
 The caching configurations for `redis` can be set using [`authorization:cache`](cfg/config.json#L121) configuration.
 
-For testing and debugging the access control checking can be dsiabled as a whole via the [`enabled`](cfg/config.json#L185) flag. This will supress the access control checking via the ACS and always permit any request.
+For testing and debugging the access control checking can be dsiabled as a whole via the [`enabled`](cfg/config.json#L184) flag. This will supress the access control checking via the ACS and always permit any request.
 If the ACS checks should be performed (and thus logged) but not enforced, the [`enforce`](cfg/config.json#L185) flag can be set to false which is useful for debugging the ruleset.
 
 ## API
