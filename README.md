@@ -20,18 +20,20 @@ Features:
 ## Configuration
 
 The `access-control-srv` [URN configurations](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#urn-reference) needs to be set using [authorization](cfg/config.json#L85) configuration to `acs-client` from access requesting microservice.
-The URN for [role scoping entity](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#role-scoping) for Organization/ business units should be set using configuration property `authorization.urns.orgScope`.
+The URN for the [role scoping entity](https://github.com/restorecommerce/access-control-srv/blob/master/restorecommerce_ABAC.md#role-scoping) for Organization/ business units must be set using the configuration property `authorization.urns.orgScope`.
 
-orgScope: 'urn:\<organization\>:acs:model:<Entity_Name>'
+`orgScope: 'urn:\<organization\>:acs:model:<Entity_Name>`
 
-ex: orgScope: 'urn:restorecommerce:acs:model:organization.Organization'
+ex: `orgScope: urn:restorecommerce:acs:model:organization.Organization`
 
-The applicable policies / rules can be enforced on the request using [`enforce`](cfg/config.json#L185) configuration.
-The cache configurations for `redis` can be set using [`authorization:cache`](cfg/config.json#L121) configuration.
+The caching configurations for `redis` can be set using [`authorization:cache`](cfg/config.json#L121) configuration.
+
+For testing and debugging the access control checking can be dsiabled as a whole via the [`enabled`](cfg/config.json#L185) flag. This will supress the access control checking via the ACS and always permit any request.
+If the ACS checks should be performed (and thus logged) but not enforced, the [`enforce`](cfg/config.json#L185) flag can be set to false which is useful for debugging the ruleset.
 
 ## API
 
-The client exposes the following api's:
+The client exposes the following API:
 
 ### `accessRequest`
 
