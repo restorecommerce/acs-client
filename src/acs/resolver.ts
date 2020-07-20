@@ -96,12 +96,11 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
 export const accessRequest = async (subject: Subject | ApiKey,
   request: any | any[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ, entity?: string,
   resourceNameSpace?: string): Promise<Decision | PolicySetRQ> => {
-  // TODO: add command to sync dynamic apikey
   let reqApiKey = (subject as ApiKey).api_key;
   // if apiKey mode is enabled
-  if (reqApiKey) {
+  if (reqApiKey && reqApiKey.value) {
     let configuredApiKey = cfg.get('authentication:apiKey');
-    if (configuredApiKey && configuredApiKey === reqApiKey) {
+    if (configuredApiKey && configuredApiKey === reqApiKey.value) {
       return Decision.PERMIT;
     }
   }

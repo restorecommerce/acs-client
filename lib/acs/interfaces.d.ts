@@ -24,8 +24,11 @@ export interface Subject {
     hierarchical_scopes?: HierarchicalScope[];
     unauthenticated?: boolean;
 }
+export interface ApiKeyValue {
+    value?: string;
+}
 export interface ApiKey {
-    api_key?: string;
+    api_key?: ApiKeyValue;
 }
 export declare enum Decision {
     PERMIT = "PERMIT",

@@ -28,8 +28,12 @@ export interface Subject {
   unauthenticated?: boolean;
 }
 
+export interface ApiKeyValue {
+  value?: string;
+}
+
 export interface ApiKey {
-  api_key?: string;
+  api_key?: ApiKeyValue;
 }
 
 export enum Decision {
