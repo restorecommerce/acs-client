@@ -99,8 +99,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
   let reqApiKey = (subject as ApiKey).api_key;
   // if apiKey mode is enabled
   if (reqApiKey && reqApiKey.value) {
-    let configuredApiKey = cfg.get('authentication:apiKey');
-    if (configuredApiKey && configuredApiKey === reqApiKey.value) {
+    if (cfg.authentication && cfg.authentication.apiKey === reqApiKey.value) {
       return Decision.PERMIT;
     }
   }
