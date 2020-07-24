@@ -80,7 +80,7 @@ const formatResourceType = (type: string, namespacePrefix?: string): string => {
 export const createResourceTarget = (resources: Resource[], action: AuthZAction | AuthZAction[]) => {
   const flattened: Attribute[] = [];
   resources.forEach((resource) => {
-    if (action != AuthZAction.EXECUTE && action != AuthZAction.DROP) {
+    if (action != AuthZAction.EXECUTE) {
       const resourceType = formatResourceType(resource.type, resource.namespace);
       if (resourceType) {
         flattened.push({
