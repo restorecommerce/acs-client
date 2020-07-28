@@ -210,6 +210,7 @@
       "delete": "urn:restorecommerce:acs:names:action:delete",
       "organization": "urn:test:acs:model:organization.Organization"
     },
+    "filterParamKey": "orgKey",
     "hierarchicalResources": [
       {
         "collection": "organizations",

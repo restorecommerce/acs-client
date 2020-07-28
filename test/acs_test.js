@@ -334,7 +334,8 @@ describe('testing acs-client', () => {
             // call accessRequest(), the response is from mock ACS
             yield resolver_1.accessRequest(subject, input, interfaces_1.AuthZAction.READ, authZ);
             // verify input is modified to enforce the applicapble poilicies
-            const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetScope' };
+            const filterParamKey = lib_1.cfg.get('authorization:filterParamKey');
+            const expectedFilterResponse = { field: filterParamKey, operation: 'eq', value: 'targetScope' };
             const actualResponse = lib_1.toObject(input.args.filter, true);
             actualResponse[0].should.deepEqual(expectedFilterResponse);
             stopGrpcMockServer();
@@ -382,7 +383,8 @@ describe('testing acs-client', () => {
             // call accessRequest(), the response is from mock ACS
             yield resolver_1.accessRequest(subject, input, interfaces_1.AuthZAction.READ, authZ);
             // verify input is modified to enforce the applicapble poilicies
-            const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetSubScope' };
+            const filterParamKey = lib_1.cfg.get('authorization:filterParamKey');
+            const expectedFilterResponse = { field: filterParamKey, operation: 'eq', value: 'targetSubScope' };
             const actualFilterResponse = lib_1.toObject(input.args.filter, true);
             actualFilterResponse[0].should.deepEqual(expectedFilterResponse);
             stopGrpcMockServer();

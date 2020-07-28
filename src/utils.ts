@@ -206,8 +206,9 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
     scopingUpdated = true;
   } else if (database && database === 'postgres' && effect == Effect.PERMIT) {
     query['filter'] = [];
+    const filterParamKey = cfg.get('authorization:filterParamKey');
     for (let eachScope of userTotalScope) {
-      query['filter'].push({ field: 'orgKey', operation: 'eq', value: eachScope });
+      query['filter'].push({ field: filterParamKey, operation: 'eq', value: eachScope });
     }
   }
 

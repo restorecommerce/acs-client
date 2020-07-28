@@ -6,7 +6,7 @@ import { AuthZAction, Decision, PolicySetRQ, ACSRequest } from '../lib/acs/inter
 import { initAuthZ, ACSAuthZ } from '../lib/acs/authz';
 import logger from '../lib/logger';
 import * as _ from 'lodash';
-import { toObject } from '../lib';
+import { toObject, cfg } from '../lib';
 
 let authZ: ACSAuthZ;
 let mockServer: any;
@@ -328,7 +328,8 @@ describe('testing acs-client', () => {
         // call accessRequest(), the response is from mock ACS
         await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
         // verify input is modified to enforce the applicapble poilicies
-        const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetScope' };
+        const filterParamKey = cfg.get('authorization:filterParamKey');
+        const expectedFilterResponse = { field: filterParamKey, operation: 'eq', value: 'targetScope' };
         const actualResponse = toObject(input.args.filter, true);
         actualResponse[0].should.deepEqual(expectedFilterResponse);
         stopGrpcMockServer();
@@ -376,7 +377,8 @@ describe('testing acs-client', () => {
         // call accessRequest(), the response is from mock ACS
         await accessRequest(subject, input, AuthZAction.READ, authZ) as PolicySetRQ;
         // verify input is modified to enforce the applicapble poilicies
-        const expectedFilterResponse = { field: 'orgKey', operation: 'eq', value: 'targetSubScope' };
+        const filterParamKey = cfg.get('authorization:filterParamKey');
+        const expectedFilterResponse = { field: filterParamKey, operation: 'eq', value: 'targetSubScope' };
         const actualFilterResponse = toObject(input.args.filter, true);
         actualFilterResponse[0].should.deepEqual(expectedFilterResponse);
         stopGrpcMockServer();
