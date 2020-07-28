@@ -8,8 +8,8 @@ npm-debug.log
 .nyc_output
 .idea
 
-#*.js
-#*.d.ts
+*.js
+*.d.ts
 
 *.log
 *~

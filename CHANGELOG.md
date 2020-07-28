@@ -1,3 +1,10 @@
+### 0.2.0 (July 28th, 2020)
+
+- changed accessrequest to use subject / apiKey instead of ctx
+- fix for drop to use the resource entity name instead of mutation name.
+- fix when input filter is not an array and when custom query is not applied
+- fix to pass filter param key in config
+
 ### 0.1.10 (June 3rd, 2020)
 
 - fixed drop action to use correct attribute identifier
