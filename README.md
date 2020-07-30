@@ -44,9 +44,9 @@ Requests are performed providing `Request` message as input and response is `Res
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| action | `Enum` | required | action to be performed on the resource (`CREATE`, `READ`, `MODIFY`, `DELETE` or `ALL`) |
+| subject | `io.restorecommerce.user.Subject` or `io.restorecommerce.user.ApiKey` | required | User Subject [user](https://github.com/restorecommerce/identity-srv#user) details (ID, role-associations and hierarchical scopes) or ApiKey |
 | request | `Resource` or `Resource [ ]` or `ReadRequest` | required | list of target resources or read request|
-| ctx | `Context` | required | context containing [user](https://github.com/restorecommerce/identity-srv#user) details (ID and role-associations) |
+| action | `Enum` | required | action to be performed on the resource (`CREATE`, `READ`, `MODIFY`, `DELETE` or `ALL`) |
  
  `Response`
 
