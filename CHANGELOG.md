@@ -1,3 +1,7 @@
+### 0.2.1 (July 28th, 2020)
+
+- option to use cache or ignore for ACS requests (by default cache is used)
+
 ### 0.2.0 (July 28th, 2020)
 
 - changed accessrequest to use subject / apiKey instead of ctx

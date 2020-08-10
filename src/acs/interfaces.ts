@@ -71,7 +71,8 @@ export interface AuthZ<TSubject, TContext = any, TResource = Resource, TAction =
   /**
    * Check is the subject is allowed to do an action on a specific resource
    */
-  isAllowed(request: Request<Target<TSubject, TResource, TAction>, TContext>): Promise<Decision>;
+  isAllowed(request: Request<Target<TSubject, TResource, TAction>, TContext>,
+    useCache: boolean): Promise<Decision>;
 }
 
 export interface Credentials {
@@ -107,7 +108,8 @@ export interface AuthZResponse extends Response {
 }
 
 export interface IAuthZ extends AuthZ<AuthZSubject | UnauthenticatedData, AuthZContext, Resource, AuthZAction> {
-  whatIsAllowed: (request: Request<AuthZWhatIsAllowedTarget | NoAuthWhatIsAllowedTarget, AuthZContext>) => Promise<PolicySetRQ>;
+  whatIsAllowed: (request: Request<AuthZWhatIsAllowedTarget | NoAuthWhatIsAllowedTarget, AuthZContext>,
+    useCache: boolean) => Promise<PolicySetRQ>;
 }
 
 export interface UserCredentials extends Credentials {

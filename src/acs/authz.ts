@@ -150,7 +150,7 @@ export class UnAuthZ implements IAuthZ {
     this.acs = acs;
   }
 
-  async isAllowed(request: Request<NoAuthTarget, AuthZContext>): Promise<Decision> {
+  async isAllowed(request: Request<NoAuthTarget, AuthZContext>, useCache): Promise<Decision> {
     const authZRequest = {
       target: {
         action: createActionTarget(request.target.action),
@@ -162,7 +162,7 @@ export class UnAuthZ implements IAuthZ {
 
     const response = await getOrFill(authZRequest, async (req) => {
       return this.acs.isAllowed(authZRequest);
-    }, 'UnAuthZ:isAllowed');
+    }, useCache, 'UnAuthZ:isAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error(response.error);
@@ -179,7 +179,9 @@ export class UnAuthZ implements IAuthZ {
     return Decision.DENY;
 
   }
-  async whatIsAllowed(request: Request<NoAuthWhatIsAllowedTarget, AuthZContext>): Promise<PolicySetRQ> {
+
+  async whatIsAllowed(request: Request<NoAuthWhatIsAllowedTarget, AuthZContext>,
+    useCache): Promise<PolicySetRQ> {
     const authZRequest = {
       target: {
         action: createActionTarget(request.target.action),
@@ -191,7 +193,7 @@ export class UnAuthZ implements IAuthZ {
 
     const response = await getOrFill(authZRequest, async (req) => {
       return this.acs.whatIsAllowed(authZRequest);
-    }, 'UnAuthZ:whatIsAllowed');
+    }, useCache, 'UnAuthZ:whatIsAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error('Unexpected empty response from ACS');
@@ -220,11 +222,11 @@ export class ACSAuthZ implements IAuthZ {
 
   /**
    * Perform request to access-control-srv
-   * @param subject
-   * @param action
-   * @param resource
+   * @param request - authZRequest containing subject, resources and action
+   * @param useCache
+   * @returns {Decision}
    */
-  async isAllowed(request: Request<AuthZTarget, AuthZContext>): Promise<Decision> {
+  async isAllowed(request: Request<AuthZTarget, AuthZContext>, useCache): Promise<Decision> {
     const authZRequest = this.prepareRequest(request);
     authZRequest.context = {
       subject: {},
@@ -267,7 +269,7 @@ export class ACSAuthZ implements IAuthZ {
     };
     const response = await getOrFill(cacheKey, async (req) => {
       return this.acs.isAllowed(authZRequest);
-    }, cachePrefix + ':isAllowed');
+    }, useCache, cachePrefix + ':isAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error(response.error);
@@ -286,11 +288,12 @@ export class ACSAuthZ implements IAuthZ {
 
   /**
   * Perform request to access-control-srv
-  * @param subject
-  * @param action
+  * @param request - authZRequest containing subject, resource and action
+  * @returns {PolicySetRQ}
   * @param resource
   */
-  async whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>): Promise<PolicySetRQ> {
+  async whatIsAllowed(request: Request<AuthZWhatIsAllowedTarget, AuthZContext>,
+    useCache): Promise<PolicySetRQ> {
     const authZRequest = this.prepareRequest(request);
     authZRequest.context = {
       subject: {},
@@ -311,7 +314,7 @@ export class ACSAuthZ implements IAuthZ {
 
     const response = await getOrFill(authZRequest, async (req) => {
       return this.acs.whatIsAllowed(authZRequest);
-    }, cachePrefix + ':whatIsAllowed');
+    }, useCache, cachePrefix + ':whatIsAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
       logger.error('Unexpected empty response from ACS');

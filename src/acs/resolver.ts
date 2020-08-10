@@ -19,7 +19,7 @@ const subjectIsUnauthenticated = (subject: any): subject is UnauthenticatedConte
 };
 
 const whatIsAllowedRequest = async (subject: Subject | ApiKey,
-  resources: Resource[], action: AuthZAction[], authZ: ACSAuthZ) => {
+  resources: Resource[], action: AuthZAction[], authZ: ACSAuthZ, useCache: boolean) => {
   if (subjectIsUnauthenticated(subject)) {
     const grpcConfig = cfg.get('client:acs-srv');
     const acsClient = new Client(grpcConfig, logger);
@@ -31,7 +31,7 @@ const whatIsAllowedRequest = async (subject: Subject | ApiKey,
       context: {
         security: {}
       }
-    });
+    }, useCache);
   } else {
     return authZ.whatIsAllowed({
       context: {
@@ -42,7 +42,7 @@ const whatIsAllowedRequest = async (subject: Subject | ApiKey,
         resources,
         subject: (subject as Subject)
       }
-    });
+    }, useCache);
   }
 };
 
@@ -51,7 +51,7 @@ const isReadRequest = (object: any): object is ReadRequest => {
 };
 
 export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
-  resources: Resource[], action: AuthZAction, authZ: ACSAuthZ): Promise<Decision> => {
+  resources: Resource[], action: AuthZAction, authZ: ACSAuthZ, useCache: boolean): Promise<Decision> => {
   if (subjectIsUnauthenticated(subject)) {
     const grpcConfig = cfg.get('client:acs-srv');
     const acsClient = new Client(grpcConfig, logger);
@@ -63,7 +63,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
       context: {
         security: {}
       }
-    });
+    }, useCache);
   } else {
     return authZ.isAllowed({
       context: {
@@ -74,7 +74,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
         resources,
         subject
       }
-    });
+    }, useCache);
   }
 };
 
@@ -91,11 +91,13 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
  * @param {ACSAuthZ} authZ ACS Authorization Object containing grpc client connection for `access-control-srv`
  * @param {string} entity entity name optional
  * @param {string} resourceNameSpace resource name space optional
+ * @param {boolean} useCache by default ACS caching is used, if set to false then ACS cache
+ * is not used and ACS request is made to `access-control-srv`
  * @returns {Decision | PolicySetRQ}
  */
 export const accessRequest = async (subject: Subject | ApiKey,
   request: any | any[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ, entity?: string,
-  resourceNameSpace?: string): Promise<Decision | PolicySetRQ> => {
+  resourceNameSpace?: string, useCache = true): Promise<Decision | PolicySetRQ> => {
   let reqApiKey = (subject as ApiKey).api_key;
   // if apiKey mode is enabled
   if (reqApiKey && reqApiKey.value) {
@@ -138,7 +140,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
       policySet = await whatIsAllowedRequest(subject, [{
         type: resourceName,
         namespace: (request as ReadRequest).namespace
-      }], [action], authZ);
+      }], [action], authZ, useCache);
     } catch (err) {
       logger.error('Error calling whatIsAllowed:', { message: err.message });
       throw err;
@@ -231,7 +233,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
     }
     // authorization
     try {
-      decision = await isAllowedRequest(subject as Subject, resourceList, action, authZ);
+      decision = await isAllowedRequest(subject as Subject, resourceList, action, authZ, useCache);
     } catch (err) {
       throw err;
     }

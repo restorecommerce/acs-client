@@ -47,6 +47,7 @@ Requests are performed providing `Request` message as input and response is `Res
 | subject | `io.restorecommerce.user.Subject` or `io.restorecommerce.user.ApiKey` | required | User Subject [user](https://github.com/restorecommerce/identity-srv#user) details (ID, role-associations and hierarchical scopes) or ApiKey |
 | request | `Resource` or `Resource [ ]` or `ReadRequest` | required | list of target resources or read request|
 | action | `Enum` | required | action to be performed on the resource (`CREATE`, `READ`, `MODIFY`, `DELETE` or `ALL`) |
+| useCache | `boolean` | optional | defaults to `true`, if set to false then ACS cache is not used and ACS request is made to `access-control-srv` |
  
  `Response`
 

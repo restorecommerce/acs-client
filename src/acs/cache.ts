@@ -1,4 +1,4 @@
-import {cfg} from '../config';
+import { cfg } from '../config';
 import logger from '../logger';
 import * as crypto from 'crypto';
 
@@ -44,7 +44,8 @@ export const initializeCache = async () => {
  * @param filler The function to execute if key is not found in cache
  * @param prefix The prefix to apply to the object key in the cache
  */
-export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M>, prefix?: string): Promise<M | undefined> => {
+export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M>,
+  useCache: boolean, prefix?: string): Promise<M | undefined> => {
   if (!redisInstance || !cacheEnabled) {
     return filler(keyData);
   }
@@ -63,7 +64,7 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
         return;
       }
 
-      if (reply) {
+      if (reply && useCache) {
         logger.debug('Found key in cache: ' + redisKey);
         return resolve(JSON.parse(reply));
       }
