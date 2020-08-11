@@ -1,4 +1,8 @@
-### 0.2.1 (July 28th, 2020)
+### 0.2.2 (August 11th, 2020)
+
+- fix not to store value in cache if useCache is set to false 
+
+### 0.2.1 (August 10th, 2020)
 
 - option to use cache or ignore for ACS requests (by default cache is used)
 
