@@ -69,6 +69,13 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
         return resolve(JSON.parse(reply));
       }
 
+      if (!useCache) {
+        return filler(keyData).then((data) => {
+          // when useCache is false, dont store in cache
+          resolve(data);
+        }).catch(reject);
+      }
+
       logger.debug('Filling cache key: ' + redisKey);
 
       return filler(keyData).then((data) => {
