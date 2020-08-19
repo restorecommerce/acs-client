@@ -1,3 +1,7 @@
+### 0.2.3 (August 19th, 2020)
+
+- up logger, grpc-client and kafka-client 
+
 ### 0.2.2 (August 11th, 2020)
 
 - fix not to store value in cache if useCache is set to false 
