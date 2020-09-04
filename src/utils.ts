@@ -7,6 +7,7 @@ import { QueryArguments, UserQueryArguments } from './acs/resolver';
 import { errors, cfg } from './config';
 import * as nodeEval from 'node-eval';
 import logger from './logger';
+import { get } from './acs/cache';
 
 export const reduceRoleAssociations = async (roleAssociations: RoleAssociation[],
   scopeID: string): Promise<UserScope> => {
@@ -255,8 +256,15 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   return query;
 };
 
-export const buildFilterPermissions = (policySet: PolicySetRQ,
-  subject: Subject, database?: string): QueryArguments | UserQueryArguments => {
+export const buildFilterPermissions = async (policySet: PolicySetRQ,
+  subject: any, database?: string): Promise<QueryArguments | UserQueryArguments> => {
+  if (!subject.role_associations || !subject.hierarchical_scopes) {
+    // update subject from redis (restore target scope from subject as it is)
+    const targetScope = subject.scope;
+    const redisKey = `cache:${subject.id}:subject`;
+    subject = await get(redisKey);
+    subject.scope = targetScope;
+  }
   const urns = cfg.get('authorization:urns');
   let query = {
     filter: []

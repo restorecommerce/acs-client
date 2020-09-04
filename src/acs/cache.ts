@@ -7,6 +7,7 @@ let redisInstance;
 let ttl: number | undefined;
 let globalPrefix: string | undefined;
 let cacheEnabled = true;
+let redisSubjectInstance;
 
 /**
  * Initialize ACS Cache
@@ -27,12 +28,17 @@ export const initializeCache = async () => {
 
   if (redis) {
     const redisConfig = cfg.get('authorization:cache');
-
+    const redisSubConfig = cfg.get('redis');
     if (redisConfig) {
       redisConfig.db = cfg.get('authorization:cache:db-index');
       redisInstance = redis.createClient(redisConfig);
       ttl = cfg.get('authorization:cache:ttl');
       globalPrefix = cfg.get('authorization:cache:prefix');
+    }
+    if (redisSubConfig) {
+      // init redis subject instance
+      redisSubConfig.db = redisSubConfig['db-indexes']['db-subject'];
+      redisSubjectInstance = redis.createClient(redisSubConfig);
     }
   }
 };
@@ -89,6 +95,37 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
 
         resolve(data);
       }).catch(reject);
+    });
+  });
+};
+
+/**
+ * Find the object in cache.
+ *
+ * @param key The key to be looked up in cache
+ * @param filler The function to execute if key is not found in cache
+ * @param prefix The prefix to apply to the object key in the cache
+ */
+export const get = async (key: string): Promise<any> => {
+  if (!redisSubjectInstance) {
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    redisSubjectInstance.get(key, async (err, reply) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      if (reply) {
+        logger.debug('Found key in cache: ' + key);
+        resolve(JSON.parse(reply));
+        return;
+      }
+      if (!err && !reply) {
+        logger.info('Key does not exist', { key });
+        resolve();
+      }
     });
   });
 };
