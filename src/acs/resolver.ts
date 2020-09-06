@@ -24,7 +24,7 @@ const whatIsAllowedRequest = async (subject: Subject | ApiKey,
     const grpcConfig = cfg.get('client:acs-srv');
     const acsClient = new Client(grpcConfig, logger);
     const acs = await acsClient.connect();
-    return new UnAuthZ(acs).whatIsAllowed({
+    return await new UnAuthZ(acs).whatIsAllowed({
       target: {
         action, resources, subject: (subject as UnauthenticatedData)
       },
@@ -33,7 +33,7 @@ const whatIsAllowedRequest = async (subject: Subject | ApiKey,
       }
     }, useCache);
   } else {
-    return authZ.whatIsAllowed({
+    return await authZ.whatIsAllowed({
       context: {
         security: {}
       },
@@ -56,7 +56,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
     const grpcConfig = cfg.get('client:acs-srv');
     const acsClient = new Client(grpcConfig, logger);
     const acs = await acsClient.connect();
-    return new UnAuthZ(acs).isAllowed({
+    return await new UnAuthZ(acs).isAllowed({
       target: {
         action, resources, subject: (subject as UnauthenticatedData)
       },
@@ -65,7 +65,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
       }
     }, useCache);
   } else {
-    return authZ.isAllowed({
+    return await authZ.isAllowed({
       context: {
         security: {}
       },

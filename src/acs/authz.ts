@@ -161,7 +161,7 @@ export class UnAuthZ implements IAuthZ {
     };
 
     const response = await getOrFill(authZRequest, async (req) => {
-      return this.acs.isAllowed(authZRequest);
+      return await this.acs.isAllowed(authZRequest);
     }, useCache, 'UnAuthZ:isAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
@@ -192,7 +192,7 @@ export class UnAuthZ implements IAuthZ {
     };
 
     const response = await getOrFill(authZRequest, async (req) => {
-      return this.acs.whatIsAllowed(authZRequest);
+      return await this.acs.whatIsAllowed(authZRequest);
     }, useCache, 'UnAuthZ:whatIsAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
@@ -268,7 +268,7 @@ export class ACSAuthZ implements IAuthZ {
       target: authZRequest.target
     };
     const response = await getOrFill(cacheKey, async (req) => {
-      return this.acs.isAllowed(authZRequest);
+      return await this.acs.isAllowed(authZRequest);
     }, useCache, cachePrefix + ':isAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
@@ -313,7 +313,7 @@ export class ACSAuthZ implements IAuthZ {
     authZRequest.context.resources = this.encode(resources);
 
     const response = await getOrFill(authZRequest, async (req) => {
-      return this.acs.whatIsAllowed(authZRequest);
+      return await this.acs.whatIsAllowed(authZRequest);
     }, useCache, cachePrefix + ':whatIsAllowed');
 
     if (_.isEmpty(response) || _.isEmpty(response.data)) {
