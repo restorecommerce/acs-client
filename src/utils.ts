@@ -262,8 +262,16 @@ export const buildFilterPermissions = async (policySet: PolicySetRQ,
     // update subject from redis (restore target scope from subject as it is)
     const targetScope = subject.scope;
     const redisKey = `cache:${subject.id}:subject`;
-    subject = await get(redisKey);
-    subject.scope = targetScope;
+    let redisSub;
+    try {
+      redisSub = await get(redisKey);
+    } catch (err) {
+      logger.error(err);
+    }
+    if (redisSub) {
+      subject = redisSub;
+      subject.scope = targetScope;
+    }
   }
   const urns = cfg.get('authorization:urns');
   let query = {
