@@ -1,3 +1,7 @@
+### 0.2.5 (September 9th, 2020)
+
+- fix to pass only token_name in context subject
+
 ### 0.2.4 (September 6th, 2020)
 
 - fix to pass only subject id and scope to access-control-srv (HR scope is constructed on acs-srv)
