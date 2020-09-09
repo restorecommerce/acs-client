@@ -173,7 +173,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   // if there is a condition add this to filter
   if (condition && !_.isEmpty(condition)) {
     condition = condition.replace(/\\n/g, '\n');
-    const request = { target, context: { subject: { id: reqSubject.id } } };
+    const request = { target, context: { subject: { id: reqSubject.id, token_name: reqSubject.token_name } } };
     try {
       filterId = validateCondition(condition, request);
       // special filter added to filter user read for his own entity
@@ -261,7 +261,11 @@ export const buildFilterPermissions = async (policySet: PolicySetRQ,
   if (!subject.role_associations || !subject.hierarchical_scopes) {
     // update subject from redis (restore target scope from subject as it is)
     const targetScope = subject.scope;
-    const redisKey = `cache:${subject.id}:subject`;
+    let subjectID = subject.id;
+    if (subject.token_name) {
+      subjectID = subjectID + ':' + subject.token_name;
+    }
+    const redisKey = `cache:${subjectID}:subject`;
     let redisSub;
     try {
       redisSub = await get(redisKey);

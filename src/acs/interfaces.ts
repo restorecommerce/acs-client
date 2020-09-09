@@ -26,6 +26,7 @@ export interface Subject {
   role_associations?: RoleAssociation[];
   hierarchical_scopes?: HierarchicalScope[]; // HR scope for user
   unauthenticated?: boolean;
+  token_name?: string;
 }
 
 export interface ApiKeyValue {
