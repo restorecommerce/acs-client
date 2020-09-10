@@ -258,7 +258,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
 
 export const buildFilterPermissions = async (policySet: PolicySetRQ,
   subject: any, database?: string): Promise<QueryArguments | UserQueryArguments> => {
-  if (!subject.role_associations || !subject.hierarchical_scopes) {
+  if (_.isEmpty(subject.role_associations) || _.isEmpty(subject.hierarchical_scopes)) {
     // update subject from redis (restore target scope from subject as it is)
     const targetScope = subject.scope;
     let subjectID = subject.id;

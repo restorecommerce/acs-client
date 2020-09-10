@@ -1,3 +1,7 @@
+### 0.2.6 (September 9th, 2020)
+
+- fix for empty check for HR / subject role associations
+
 ### 0.2.5 (September 9th, 2020)
 
 - fix to pass only token_name in context subject
