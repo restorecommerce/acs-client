@@ -1,3 +1,7 @@
+### 0.2.7 (September 14th, 2020)
+
+- fix for flushCache to delete all keys
+
 ### 0.2.6 (September 9th, 2020)
 
 - fix for empty check for HR / subject role associations

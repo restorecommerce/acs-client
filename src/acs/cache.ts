@@ -1,11 +1,11 @@
 import { cfg } from '../config';
 import logger from '../logger';
 import * as crypto from 'crypto';
+import * as Redis from 'ioredis';
 
 let attempted = false;
 let redisInstance;
 let ttl: number | undefined;
-let globalPrefix: string | undefined;
 let cacheEnabled = true;
 let redisSubjectInstance;
 
@@ -33,7 +33,6 @@ export const initializeCache = async () => {
       redisConfig.db = cfg.get('authorization:cache:db-index');
       redisInstance = redis.createClient(redisConfig);
       ttl = cfg.get('authorization:cache:ttl');
-      globalPrefix = cfg.get('authorization:cache:prefix');
     }
     if (redisSubConfig) {
       // init redis subject instance
@@ -136,38 +135,41 @@ export const get = async (key: string): Promise<any> => {
  * @param prefix An optional prefix to flush instead of entire cache
  */
 export const flushCache = async (prefix?: string) => {
-  if (!redisInstance || !cacheEnabled) {
+  let ioredisInstance;
+  const redisConfig = cfg.get('authorization:cache');
+  if (redisConfig) {
+    redisConfig.db = cfg.get('authorization:cache:db-index');
+    ioredisInstance = new Redis(redisConfig);
+  }
+  if (!ioredisInstance || !cacheEnabled) {
     return;
   }
 
   if (prefix != undefined) {
-    let flushPrefix = globalPrefix + prefix + '*';
+    let stream = ioredisInstance.scanStream({ match: `acs:${prefix}:*`, count: 100 });
+    let pipeline = ioredisInstance.pipeline();
+    let localKeys = [];
 
-    logger.debug('Flushing ACS cache prefix: ' + flushPrefix);
-
-    return new Promise((resolve, reject) => {
-      redisInstance.scan('0', 'MATCH', flushPrefix, (err, reply) => {
-        if (err) {
-          logger.error('Failed flushing ACS cache prefix: ', err);
-          return reject();
-        }
-
-        if (reply.length >= 2 && reply[1].length > 0) {
-          const cleaned = reply[1].map(key => globalPrefix ? key.substr(globalPrefix.length) : key);
-          return redisInstance.del(cleaned, (err1, reply1) => {
-            if (err1) {
-              logger.error('Failed flushing ACS cache prefix: ', err1);
-              return reject();
-            }
-
-            logger.debug('Flushed ACS cache prefix: ' + flushPrefix);
-            return resolve();
-          });
-        }
-
-        resolve();
-      });
+    stream.on('data', (resultKeys) => {
+      logger.info('Data Received:', localKeys.length);
+      for (let i = 0; i < resultKeys.length; i++) {
+        localKeys.push(resultKeys[i]);
+        pipeline.del(resultKeys[i]);
+      } if (localKeys.length > 100) {
+        pipeline.exec(() => { logger.info('one batch delete complete'); });
+        localKeys = [];
+        pipeline = ioredisInstance.pipeline();
+      }
     });
+    stream.on('end', () => {
+      pipeline.exec(() => { logger.info('final batch delete complete'); });
+      return;
+    });
+    stream.on('error', (err) => {
+      logger.error('error', err);
+      return;
+    });
+    return;
   }
 
   logger.debug('Flushing ACS cache');
