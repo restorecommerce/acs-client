@@ -186,7 +186,10 @@ describe('testing acs-client', () => {
 
   after(async function stopServer(): Promise<void> {
     await stop();
-    await flushCache();
+    const cacheEnabled = process.env.CACHE_ENABLED;
+    if (cacheEnabled && cacheEnabled.toLowerCase() === 'true') {
+      await flushCache();
+    }
   });
 
   beforeEach(async function flush() {
@@ -384,6 +387,10 @@ describe('testing acs-client', () => {
         stopGrpcMockServer();
       });
     it('Should DENY reading Test resource (PERMIT rule) with HR scoping disabled', async () => {
+      const cacheEnabled = process.env.CACHE_ENABLED;
+      if (cacheEnabled && cacheEnabled.toLowerCase() === 'true') {
+        await flushCache();
+      }
       // PolicySet contains PERMIT rule
       // disable HR scoping for permitRule
       permitRule.target.subject[2].value = 'false';

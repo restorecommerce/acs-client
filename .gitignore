@@ -13,6 +13,7 @@ npm-debug.log
 
 *.log
 *~
-
+test/*.js
+test/*.d.ts
 !.eslintrc.js
 !setupTopics.js
