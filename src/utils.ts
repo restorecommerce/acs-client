@@ -211,6 +211,13 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
     for (let eachScope of userTotalScope) {
       query['filter'].push({ field: filterParamKey, operation: 'eq', value: eachScope });
     }
+    // apply filter from condition
+    for (let eachFilter of filter) {
+      if (eachFilter.id && eachFilter.id.$eq) {
+        query['filter'].push({ field: filterParamKey, operation: 'eq', value: eachFilter.id.$eq });
+        filter = [];
+      }
+    }
   }
 
   for (let attribute of resources) {

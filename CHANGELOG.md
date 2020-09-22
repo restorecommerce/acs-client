@@ -1,3 +1,7 @@
+### 0.2.8 (September 22nd, 2020)
+
+- fix to apply filter from rule condition
+
 ### 0.2.7 (September 14th, 2020)
 
 - fix for flushCache to delete all keys
