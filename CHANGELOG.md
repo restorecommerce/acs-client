@@ -1,3 +1,7 @@
+### 0.2.8 (October 1st, 2020)
+
+- fix for changes in redis key for HR scope
+
 ### 0.2.8 (September 22nd, 2020)
 
 - fix to apply filter from rule condition

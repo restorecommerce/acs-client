@@ -173,7 +173,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   // if there is a condition add this to filter
   if (condition && !_.isEmpty(condition)) {
     condition = condition.replace(/\\n/g, '\n');
-    const request = { target, context: { subject: { id: reqSubject.id, token_name: reqSubject.token_name } } };
+    const request = { target, context: { subject: { id: reqSubject.id, token: reqSubject.token } } };
     try {
       filterId = validateCondition(condition, request);
       // special filter added to filter user read for his own entity
@@ -269,17 +269,25 @@ export const buildFilterPermissions = async (policySet: PolicySetRQ,
     // update subject from redis (restore target scope from subject as it is)
     const targetScope = subject.scope;
     let subjectID = subject.id;
-    if (subject.token_name) {
-      subjectID = subjectID + ':' + subject.token_name;
-    }
-    const redisKey = `cache:${subjectID}:subject`;
+    let token = subject.token;
+    const redisSubKey = `cache:${subjectID}:subject`;
+    let redisHRScopesKey = `cache:${subjectID}:hrScopes`;
     let redisSub;
     try {
-      redisSub = await get(redisKey);
+      redisSub = await get(redisSubKey);
+      if (redisSub && redisSub.tokens) {
+        for (let tokenInfo of redisSub.tokens) {
+          if ((tokenInfo.token) === token && tokenInfo.scopes && tokenInfo.scopes.length > 0) {
+            redisHRScopesKey = `cahce:${subjectID}:${token}:hrScopes`;
+          }
+        }
+      }
     } catch (err) {
       logger.error(err);
     }
     if (redisSub) {
+      const hierarchical_scopes = await get(redisHRScopesKey);
+      Object.assign(redisSub, { hierarchical_scopes });
       subject = redisSub;
       subject.scope = targetScope;
     }
