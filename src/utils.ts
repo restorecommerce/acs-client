@@ -278,7 +278,7 @@ export const buildFilterPermissions = async (policySet: PolicySetRQ,
       if (redisSub && redisSub.tokens) {
         for (let tokenInfo of redisSub.tokens) {
           if ((tokenInfo.token) === token && tokenInfo.scopes && tokenInfo.scopes.length > 0) {
-            redisHRScopesKey = `cahce:${subjectID}:${token}:hrScopes`;
+            redisHRScopesKey = `cache:${subjectID}:${token}:hrScopes`;
           }
         }
       }

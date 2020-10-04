@@ -1,4 +1,8 @@
-### 0.2.8 (October 1st, 2020)
+### 0.2.10 (October 4th, 2020)
+
+- fix typo for redis key
+
+### 0.2.9 (October 1st, 2020)
 
 - fix for changes in redis key for HR scope
 
