@@ -9,6 +9,7 @@ import { cfg, updateConfig } from '../config';
 import logger from '../logger';
 import { getOrFill, flushCache } from './cache';
 import { Events } from '@restorecommerce/kafka-client';
+import { validateSubjectIdToken } from './../utils';
 
 export declare type Authorizer = ACSAuthZ;
 export let authZ: Authorizer;
@@ -267,6 +268,11 @@ export class ACSAuthZ implements IAuthZ {
     let cacheKey = {
       target: authZRequest.target
     };
+    let isValid = false;
+    isValid = await validateSubjectIdToken(subject.id, subject.token);
+    if (!isValid) {
+      return Decision.DENY;
+    }
     const response = await getOrFill(cacheKey, async (req) => {
       return await this.acs.isAllowed(authZRequest);
     }, useCache, cachePrefix + ':isAllowed');
@@ -311,6 +317,12 @@ export class ACSAuthZ implements IAuthZ {
 
     authZRequest.context.subject = this.encode(subject);
     authZRequest.context.resources = this.encode(resources);
+
+    let isValid = false;
+    isValid = await validateSubjectIdToken(subject.id, subject.token);
+    if (!isValid) {
+      return {} as any;
+    }
 
     const response = await getOrFill(authZRequest, async (req) => {
       return await this.acs.whatIsAllowed(authZRequest);

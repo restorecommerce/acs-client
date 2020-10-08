@@ -1,3 +1,7 @@
+### 0.2.11 (October 8th, 2020)
+
+- fix to validate subject ID and token
+
 ### 0.2.10 (October 4th, 2020)
 
 - fix typo for redis key
