@@ -1,3 +1,7 @@
+### 0.2.12 (October 12th, 2020)
+
+- fix not to reset filter
+
 ### 0.2.11 (October 8th, 2020)
 
 - fix to validate subject ID and token

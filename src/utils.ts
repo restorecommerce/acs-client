@@ -439,7 +439,9 @@ export const buildFilterPermissions = async (policySet: PolicySetRQ,
     if (policy.filter && database && database === 'postgres') {
       // add a filter for org key based on user scope
       let keys = Object.keys(policy.filter);
-      query['filter'] = [];
+      if (!query['filter']) {
+        query['filter'] = [];
+      }
       for (let key of keys) {
         query['filter'].push(policy.filter[key]);
       }
