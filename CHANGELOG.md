@@ -1,3 +1,8 @@
+### 0.2.13 (October 14th, 2020)
+
+- added evaluation_cacheable (if set to true then data from cache is served)
+- up dependencies
+
 ### 0.2.12 (October 12th, 2020)
 
 - fix not to reset filter
