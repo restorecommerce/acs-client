@@ -2,6 +2,7 @@ import { cfg } from '../config';
 import logger from '../logger';
 import * as crypto from 'crypto';
 import * as Redis from 'ioredis';
+import * as _ from 'lodash';
 
 let attempted = false;
 let redisInstance;
@@ -70,8 +71,23 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
       }
 
       if (reply && useCache) {
-        logger.debug('Found key in cache: ' + redisKey);
-        return resolve(JSON.parse(reply));
+        const response = JSON.parse(reply);
+        let evaluation_cacheable = response.evaluation_cacheable;
+        if (response && response.data && !_.isEmpty(response.data.policy_sets)) {
+          const policies = response.data.policy_sets[0];
+          if(policies.evaluation_cacheable) {
+            for (let rule of policies.rules) {
+              if (rule.evaluation_cacheable) {
+                evaluation_cacheable = rule.evaluation_cacheable;
+                break;
+              }
+            }
+          }
+        }
+        if (evaluation_cacheable) {
+          logger.debug('Found key in cache: ' + redisKey);
+          return response;
+        }
       }
 
       if (!useCache) {

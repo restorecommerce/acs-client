@@ -222,7 +222,7 @@ export const validateSubjectIdToken = async (subjectID: string, token: string): 
 
 
 const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
-  userTotalScope: string[], urns: any, userCondition, scopingUpdated,
+  userTotalScope: string[], urns: any, userCondition, scopingUpdated, reqResources,
   condition?: string, reqSubject?: Subject, database?: string): QueryParams => {
   const { subject, resources } = target;
 
@@ -233,7 +233,13 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   // if there is a condition add this to filter
   if (condition && !_.isEmpty(condition)) {
     condition = condition.replace(/\\n/g, '\n');
-    const request = { target, context: { subject: { id: reqSubject.id, token: reqSubject.token } } };
+    if (!reqResources) {
+      reqResources = [];
+    }
+    if (!_.isArray(reqResources)) {
+      reqResources = [reqResources];
+    }
+    const request = { target, context: { subject: { id: reqSubject.id, token: reqSubject.token }, resources: reqResources } };
     try {
       filterId = validateCondition(condition, request);
       // special filter added to filter user read for his own entity
@@ -244,9 +250,13 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
             $eq: filterId
           }
         });
+      } else {
+        return;
       }
     } catch (err) {
-      logger.error('Error caught evaluating condition:', { condition, err });
+      logger.error('Error caught evaluating condition:', { condition });
+      logger.error('Error', { err });
+      return;
     }
   }
   const scopingAttribute = _.find(subject, (attribute: Attribute) =>
@@ -324,7 +334,7 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
 };
 
 export const buildFilterPermissions = async (policySet: PolicySetRQ,
-  subject: any, database?: string): Promise<QueryArguments | UserQueryArguments> => {
+  subject: any, reqResources: any, database?: string): Promise<QueryArguments | UserQueryArguments> => {
   if (_.isEmpty(subject.role_associations) || _.isEmpty(subject.hierarchical_scopes)) {
     // update subject from redis (restore target scope from subject as it is)
     const targetScope = subject.scope;
@@ -400,7 +410,7 @@ export const buildFilterPermissions = async (policySet: PolicySetRQ,
           }
           if (rule.effect == effect) {
             const filterPermissions = buildQueryFromTarget(rule.target, effect,
-              reducedUserScope, urns, userCondition, scopingUpdated,
+              reducedUserScope, urns, userCondition, scopingUpdated, reqResources,
               rule.condition, subject, database);
             if (!_.isEmpty(filterPermissions)) {
               scopingUpdated = filterPermissions.scopingUpdated;
