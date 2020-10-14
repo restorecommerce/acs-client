@@ -1,6 +1,6 @@
-import * as sconfig from '@restorecommerce/service-config';
+import { createServiceConfig } from '@restorecommerce/service-config';
 // Export cfg Object
-export let cfg = sconfig(process.cwd());
+export let cfg = createServiceConfig(process.cwd());
 // errors mapped to code and message
 export const errors = cfg.get('errors');
 
