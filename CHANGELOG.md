@@ -1,3 +1,7 @@
+### 0.2.14 (October 19th, 2020)
+
+- fix for validating evaluation_cacheable for read operations
+
 ### 0.2.13 (October 14th, 2020)
 
 - added evaluation_cacheable (if set to true then data from cache is served)
