@@ -90,7 +90,7 @@ export const getOrFill = async <T, M>(keyData: T, filler: (data: T) => Promise<M
         }
         if (evaluation_cacheable) {
           logger.debug('Found key in cache: ' + redisKey);
-          return response;
+          return resolve(response);
         }
       }
 

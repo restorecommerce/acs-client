@@ -1,3 +1,7 @@
+### 0.2.15 (October 20th, 2020)
+
+- fix acs-client to resolve promise when data cached
+
 ### 0.2.14 (October 19th, 2020)
 
 - fix for validating evaluation_cacheable for read operations
