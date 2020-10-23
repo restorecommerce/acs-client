@@ -98,6 +98,7 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
 export const accessRequest = async (subject: Subject | ApiKey,
   request: any | any[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ, entity?: string,
   resourceNameSpace?: string, useCache = true): Promise<Decision | PolicySetRQ> => {
+  let subClone = _.cloneDeep(subject);
   let reqApiKey = (subject as ApiKey).api_key;
   // if apiKey mode is enabled
   if (reqApiKey && reqApiKey.value) {
@@ -137,7 +138,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
     try {
       // retrieving set of applicable policies/rules from ACS
       // Note: it is assumed that there is only one policy set
-      policySet = await whatIsAllowedRequest(subject, [{
+      policySet = await whatIsAllowedRequest(subClone, [{
         type: resourceName,
         namespace: (request as ReadRequest).namespace
       }], [action], authZ, useCache);
@@ -163,7 +164,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
         `config is disabled overriding the ACS result`);
     }
     // extend input filter to enforce applicable policies
-    let permissionArguments = await buildFilterPermissions(policySet, subject as Subject, request, request.database);
+    let permissionArguments = await buildFilterPermissions(policySet, subClone as Subject, request, request.database);
     if (!permissionArguments && authzEnforced) {
       const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
         `resource:${resourceName}, action:${action}, target_scope:${targetScope}; the response was DENY`;
@@ -233,7 +234,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
     }
     // authorization
     try {
-      decision = await isAllowedRequest(subject as Subject, resourceList, action, authZ, useCache);
+      decision = await isAllowedRequest(subClone as Subject, resourceList, action, authZ, useCache);
     } catch (err) {
       throw err;
     }

@@ -1,3 +1,7 @@
+### 0.2.16 (October 23rd, 2020)
+
+- fix subject for acs-client
+
 ### 0.2.15 (October 20th, 2020)
 
 - fix acs-client to resolve promise when data cached
