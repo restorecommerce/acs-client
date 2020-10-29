@@ -122,7 +122,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
     return Decision.PERMIT;
   }
 
-  if (_.isEmpty(subject) || !(subject as Subject).id) {
+  if (_.isEmpty(subject) || !(subject as Subject).id && !((subject as Subject).unauthenticated)) {
     throw new Unauthenticated(errors.USER_NOT_LOGGED_IN.message, errors.USER_NOT_LOGGED_IN.code);
   }
 

@@ -1,3 +1,7 @@
+### 0.2.17 (October 29th, 2020)
+
+- fix for unauthenticated user property check
+
 ### 0.2.16 (October 23rd, 2020)
 
 - fix subject for acs-client
