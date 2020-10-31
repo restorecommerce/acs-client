@@ -99,7 +99,10 @@ export const accessRequest = async (subject: Subject,
   request: any | any[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ, entity?: string,
   resourceNameSpace?: string, useCache = true): Promise<Decision | PolicySetRQ> => {
   let subClone = _.cloneDeep(subject);
-  let token = subject.token;
+  let token;
+  if (subject && subject.token) {
+    token = subject.token;
+  }
   // if apiKey mode is enabled
   if (token) {
     const configuredApiKey = cfg.get('authentication:apiKey');
