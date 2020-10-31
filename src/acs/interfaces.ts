@@ -23,18 +23,17 @@ export interface HierarchicalScope {
 export interface Subject {
   id?: string;
   scope?: string; // target scope
-  role_associations?: RoleAssociation[];
-  hierarchical_scopes?: HierarchicalScope[]; // HR scope for user
   unauthenticated?: boolean;
   token?: string;
 }
 
-export interface ApiKeyValue {
-  value?: string;
-}
-
-export interface ApiKey {
-  api_key?: ApiKeyValue;
+export interface SubjectResolved {
+  id?: string;
+  scope?: string; // target scope
+  unauthenticated?: boolean;
+  token?: string;
+  role_associations?: RoleAssociation[];
+  hierarchical_scopes?: HierarchicalScope[]; // HR scope for user
 }
 
 export enum Decision {

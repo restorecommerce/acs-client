@@ -1,5 +1,5 @@
 import {
-  RoleAssociation, UserScope, Subject,
+  RoleAssociation, UserScope, Subject, SubjectResolved,
   PolicySetRQ, Effect, AttributeTarget, Attribute, HierarchicalScope
 } from './acs/interfaces';
 import * as _ from 'lodash';
@@ -8,7 +8,6 @@ import { errors, cfg } from './config';
 import * as nodeEval from 'node-eval';
 import logger from './logger';
 import { get } from './acs/cache';
-import { createClient } from 'redis';
 
 export const reduceRoleAssociations = async (roleAssociations: RoleAssociation[],
   scopeID: string): Promise<UserScope> => {
@@ -86,7 +85,7 @@ const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string,
   return false;
 };
 
-const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
+const checkSubjectMatch = (user: SubjectResolved, ruleSubjectAttributes: Attribute[],
   reducedUserScope?: string[]): boolean => {
   // 1) Iterate through ruleSubjectAttributes and check if the roleScopingEntity URN and
   // role URN exists
@@ -161,65 +160,6 @@ const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
 const validateCondition = (condition: string, request: any): boolean => {
   return nodeEval(condition, 'condition.js', request);
 };
-
-const getRedisKey = async (key: string, redisClient: any): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    redisClient.get(key, async (err, reply) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      if (reply) {
-        logger.debug('Found key in cache: ' + key);
-        resolve(JSON.parse(reply));
-        return;
-      }
-      if (!err && !reply) {
-        logger.info('Key does not exist', { key });
-        resolve();
-      }
-    });
-  });
-};
-
-export const validateSubjectIdToken = async (subjectID: string, token: string): Promise<any> => {
-  const redisConfig = cfg.get('redis');
-  redisConfig.db = cfg.get('redis:db-indexes:db-subject') | 1;
-  const redisClient = createClient(redisConfig);
-
-  redisConfig.db = cfg.get('redis:db-indexes:db-access-token') | 0;
-  const tokenClient = createClient(redisConfig);
-
-  let subjectKey = `cache:${subjectID}:subject`;
-  // const subject = await this.getRedisKey(redisKey, this.redisClient);
-  const accessTokenKey = `AccessToken:${token}`;
-  const idToken = await getRedisKey(accessTokenKey, tokenClient);
-  if (!_.isEmpty(idToken) && idToken.claims) {
-    const subject = idToken.claims.data;
-    if (subject.id === subjectID) {
-      logger.debug(`Subject ID ${subjectID} and token match`);
-      return true;
-    }
-  } else if (!idToken) {
-    // read subject from db-subject and compare
-    const subject = await getRedisKey(subjectKey, redisClient);
-    if (subject && !_.isEmpty(subject.tokens)) {
-      for (let tokenInfo of subject.tokens) {
-        if (tokenInfo.token === token) {
-          logger.debug(`Subject ID ${subjectID} and token match`);
-          return true;
-        }
-      }
-    } else if (!subject && !idToken) {
-      logger.debug('No subject or access token is stored');
-      return true;
-    }
-  }
-  logger.debug(`Subject ID ${subjectID} and token don't match`);
-  return false;
-};
-
 
 const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
   userTotalScope: string[], urns: any, userCondition, scopingUpdated, reqResources,

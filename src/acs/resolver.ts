@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import {
   PolicySetRQ, UnauthenticatedContext, Resource, Decision,
-  ACSRequest, Subject, UnauthenticatedData, ApiKey
+  ACSRequest, Subject, UnauthenticatedData
 } from './interfaces';
 import { AuthZAction } from './interfaces';
 import logger from '../logger';
@@ -9,7 +9,7 @@ import { errors, cfg } from '../config';
 import { buildFilterPermissions } from '../utils';
 import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { UnAuthZ, ACSAuthZ } from './authz';
-import { Unauthenticated, PermissionDenied } from './errors';
+import { Unauthenticated, PermissionDenied, FailedPrecondition } from './errors';
 import { toObject } from './../utils';
 
 
@@ -18,7 +18,7 @@ const subjectIsUnauthenticated = (subject: any): subject is UnauthenticatedConte
     && 'unauthenticated' in subject && subject['unauthenticated'];
 };
 
-const whatIsAllowedRequest = async (subject: Subject | ApiKey,
+const whatIsAllowedRequest = async (subject: Subject,
   resources: Resource[], action: AuthZAction[], authZ: ACSAuthZ, useCache: boolean) => {
   if (subjectIsUnauthenticated(subject)) {
     const grpcConfig = cfg.get('client:acs-srv');
@@ -40,7 +40,7 @@ const whatIsAllowedRequest = async (subject: Subject | ApiKey,
       target: {
         action,
         resources,
-        subject: (subject as Subject)
+        subject
       }
     }, useCache);
   }
@@ -95,15 +95,15 @@ export const isAllowedRequest = async (subject: Subject | UnauthenticatedData,
  * is not used and ACS request is made to `access-control-srv`
  * @returns {Decision | PolicySetRQ}
  */
-export const accessRequest = async (subject: Subject | ApiKey,
+export const accessRequest = async (subject: Subject,
   request: any | any[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ, entity?: string,
   resourceNameSpace?: string, useCache = true): Promise<Decision | PolicySetRQ> => {
   let subClone = _.cloneDeep(subject);
-  let reqApiKey = (subject as ApiKey).api_key;
+  let token = subject.token;
   // if apiKey mode is enabled
-  if (reqApiKey && reqApiKey.value) {
+  if (token) {
     const configuredApiKey = cfg.get('authentication:apiKey');
-    if (configuredApiKey === reqApiKey.value) {
+    if (configuredApiKey === token) {
       return Decision.PERMIT;
     }
   }
@@ -122,13 +122,28 @@ export const accessRequest = async (subject: Subject | ApiKey,
     return Decision.PERMIT;
   }
 
-  if (_.isEmpty(subject) || !(subject as Subject).id && !((subject as Subject).unauthenticated)) {
+  if (_.isEmpty(subject) || !(subject as Subject).token && !((subject as Subject).unauthenticated)) {
     throw new Unauthenticated(errors.USER_NOT_LOGGED_IN.message, errors.USER_NOT_LOGGED_IN.code);
   }
 
   let resources: any[] = [];
-  let requestingUserName_ID = (subject as Subject).id;
-  let targetScope = (subject as Subject).scope;
+  let subjectID;
+  let targetScope = subject.scope;
+  // resolve userID by token
+  if (!subject.unauthenticated) {
+    if (!authZ.ids) {
+      throw new FailedPrecondition('identity-srv client config not initialized', 500);
+    }
+    const user = await authZ.ids.findByToken(token);
+    if (!user) {
+      throw new Unauthenticated('could not resolve token to user', 401);
+    } else {
+      subClone.id = user.id;
+      subjectID = user.id;
+    }
+  } else {
+    subjectID = subject.id;
+  }
   // for read operations
   if (action == AuthZAction.READ && isReadRequest(request)
     // for action create or modify with read request to get policySetRQ
@@ -149,7 +164,7 @@ export const accessRequest = async (subject: Subject | ApiKey,
 
     // handle case if policySet is empty
     if (_.isEmpty(policySet) && authzEnforced) {
-      const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
+      const msg = `Access not allowed for request with subject:${subjectID}, ` +
         `resource:${resourceName}, action:${action}, target_scope:${targetScope}; the response was INDETERMINATE`;
       const details = 'no matching policy/rule could be found';
       logger.verbose(msg);
@@ -159,23 +174,23 @@ export const accessRequest = async (subject: Subject | ApiKey,
 
     if (_.isEmpty(policySet) && !authzEnforced) {
       logger.verbose(`The Access response was INDETERMIATE for a request with subject:` +
-        `${requestingUserName_ID}, resource:${resourceName}, action:${action}, target_scope:${targetScope} ` +
+        `${subjectID}, resource:${resourceName}, action:${action}, target_scope:${targetScope} ` +
         `as no matching policy/rule could be found, but since ACS enforcement ` +
         `config is disabled overriding the ACS result`);
     }
     // extend input filter to enforce applicable policies
-    let permissionArguments = await buildFilterPermissions(policySet, subClone as Subject, request, request.database);
+    let permissionArguments = await buildFilterPermissions(policySet, subClone, request, request.database);
     if (!permissionArguments && authzEnforced) {
-      const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
+      const msg = `Access not allowed for request with subject:${subjectID}, ` +
         `resource:${resourceName}, action:${action}, target_scope:${targetScope}; the response was DENY`;
-      const details = `Subject:${requestingUserName_ID} does not have access to target scope ${targetScope}}`;
+      const details = `Subject:${subjectID} does not have access to target scope ${targetScope}}`;
       logger.verbose(msg);
       logger.verbose('Details:', { details });
       throw new PermissionDenied(msg, Number(errors.ACTION_NOT_ALLOWED.code));
     }
 
     if (!permissionArguments && !authzEnforced) {
-      logger.verbose(`The Access response was DENY for a request from subject:${requestingUserName_ID}, ` +
+      logger.verbose(`The Access response was DENY for a request from subject:${subjectID}, ` +
         `resource:${resourceName}, action:${action}, target_scope:${targetScope}, ` +
         `but since ACS enforcement config is disabled overriding the ACS result`);
     }
@@ -244,9 +259,9 @@ export const accessRequest = async (subject: Subject | ApiKey,
       if (decision === Decision.INDETERMINATE) {
         details = 'No matching policy / rule was found';
       } else if (decision === Decision.DENY) {
-        details = `Subject:${requestingUserName_ID} does not have access to requested target scope ${targetScope}`;
+        details = `Subject:${subjectID} does not have access to requested target scope ${targetScope}`;
       }
-      const msg = `Access not allowed for request with subject:${requestingUserName_ID}, ` +
+      const msg = `Access not allowed for request with subject:${subjectID}, ` +
         `resource:${resourceList[0].type}, action:${action}, target_scope:${targetScope}; the response was ${decision}`;
       logger.verbose(msg);
       logger.verbose('Details:', { details });
@@ -258,9 +273,9 @@ export const accessRequest = async (subject: Subject | ApiKey,
     if (decision === Decision.INDETERMINATE) {
       details = 'No matching policy / rule was found';
     } else if (decision === Decision.DENY) {
-      details = `Subject:${requestingUserName_ID} does not have access to requested target scope ${targetScope}`;
+      details = `Subject:${subjectID} does not have access to requested target scope ${targetScope}`;
     }
-    logger.verbose(`Access not allowed for request with subject:${requestingUserName_ID}, ` +
+    logger.verbose(`Access not allowed for request with subject:${subjectID}, ` +
       `resource:${resourceList[0].type}, action:${action}, target_scope:${targetScope}; the response was ${decision}`);
     logger.verbose(`${details}, Overriding the ACS result as ACS enforce config is disabled`);
     decision = Decision.PERMIT;

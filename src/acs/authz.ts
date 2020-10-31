@@ -9,7 +9,6 @@ import { cfg, updateConfig } from '../config';
 import logger from '../logger';
 import { getOrFill, flushCache } from './cache';
 import { Events } from '@restorecommerce/kafka-client';
-import { validateSubjectIdToken } from './../utils';
 
 export declare type Authorizer = ACSAuthZ;
 export let authZ: Authorizer;
@@ -213,12 +212,14 @@ export class UnAuthZ implements IAuthZ {
  */
 export class ACSAuthZ implements IAuthZ {
   acs: any;
+  ids: any;
   /**
    *
    * @param acs Access Control Service definition (gRPC)
    */
-  constructor(acs: any) {
+  constructor(acs: any, ids?: any) {
     this.acs = acs;
+    this.ids = ids;
   }
 
   /**
@@ -235,13 +236,7 @@ export class ACSAuthZ implements IAuthZ {
       security: this.encode(request.context.security)
     };
     let resources = request.target.resources;
-
     const subject = request.target.subject;
-    if (subject && subject.unauthenticated) {
-      // New user registering
-      subject.role_associations = [];
-    }
-
     let cachePrefix = 'ACSAuthZ';
 
     if (request.target.subject.id !== undefined) {
@@ -268,11 +263,6 @@ export class ACSAuthZ implements IAuthZ {
     let cacheKey = {
       target: authZRequest.target
     };
-    let isValid = false;
-    isValid = await validateSubjectIdToken(subject.id, subject.token);
-    if (!isValid) {
-      return Decision.DENY;
-    }
     const response = await getOrFill(cacheKey, async (req) => {
       return await this.acs.isAllowed(authZRequest);
     }, useCache, cachePrefix + ':isAllowed');
@@ -317,12 +307,6 @@ export class ACSAuthZ implements IAuthZ {
 
     authZRequest.context.subject = this.encode(subject);
     authZRequest.context.resources = this.encode(resources);
-
-    let isValid = false;
-    isValid = await validateSubjectIdToken(subject.id, subject.token);
-    if (!isValid) {
-      return {} as any;
-    }
 
     const response = await getOrFill(authZRequest, async (req) => {
       return await this.acs.whatIsAllowed(authZRequest);
@@ -414,10 +398,18 @@ export const initAuthZ = async (config?: any): Promise<void | ACSAuthZ> => {
     const kafkaCfg = cfg.get('events:kafka');
     // gRPC interface for access-control-srv
     if (authzCfg.enabled) {
-      const grpcConfig = cfg.get('client:acs-srv');
-      const client = new Client(grpcConfig, logger);
-      const acs = await client.connect();
-      authZ = new ACSAuthZ(acs);
+      const grpcClientConfig = cfg.get('client');
+      const grpcACSConfig = grpcClientConfig['acs-srv'];
+      const acsClient = new Client(grpcACSConfig, logger);
+      const acs = await acsClient.connect();
+      // identity-srv client to resolve user by token
+      let ids;
+      const grpcIDSConfig = grpcClientConfig['identity-srv'];
+      if (grpcIDSConfig) {
+        const idsClient = new Client(grpcIDSConfig, logger);
+        ids = await idsClient.connect();
+      }
+      authZ = new ACSAuthZ(acs, ids);
       // listeners for rules / policies / policySets modified, so as to
       // delete the Cache as it would be invalid if ACS resources are modified
       if (kafkaCfg && kafkaCfg.evictACSCache) {
