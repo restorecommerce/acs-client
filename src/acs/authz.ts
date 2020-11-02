@@ -404,7 +404,7 @@ export const initAuthZ = async (config?: any): Promise<void | ACSAuthZ> => {
       const acs = await acsClient.connect();
       // identity-srv client to resolve user by token
       let ids;
-      const grpcIDSConfig = grpcClientConfig['identity-srv'];
+      const grpcIDSConfig = grpcClientConfig['user'];
       if (grpcIDSConfig) {
         const idsClient = new Client(grpcIDSConfig, logger);
         ids = await idsClient.connect();
