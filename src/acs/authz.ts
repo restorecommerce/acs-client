@@ -236,7 +236,7 @@ export class ACSAuthZ implements IAuthZ {
       security: this.encode(request.context.security)
     };
     let resources = request.target.resources;
-    const subject = request.target.subject;
+    const subject = { token: request.target.subject.token };
     let cachePrefix = 'ACSAuthZ';
 
     if (request.target.subject.id !== undefined) {
@@ -297,7 +297,7 @@ export class ACSAuthZ implements IAuthZ {
       security: this.encode(request.context.security)
     };
     let resources = request.target.resources;
-    const subject = request.target.subject;
+    const subject = { token: request.target.subject.token };
 
     let cachePrefix = 'ACSAuthZ';
 
