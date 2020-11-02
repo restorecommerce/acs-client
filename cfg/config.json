@@ -161,7 +161,8 @@
         ]
       },
       "endpoints": {
-        "login": {}
+        "login": {},
+        "findByToken": {}
       }
     },
     "graph-srv": {
