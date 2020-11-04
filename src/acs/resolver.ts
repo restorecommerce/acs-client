@@ -140,9 +140,9 @@ export const accessRequest = async (subject: Subject,
     const user = await authZ.ids.findByToken({ token });
     if (!user) {
       throw new Unauthenticated('could not resolve token to user', 401);
-    } else {
-      subClone.id = user.id;
-      subjectID = user.id;
+    } else if(user && user.data) {
+      subClone.id = user.data.id;
+      subjectID = user.data.id;
     }
   } else {
     subjectID = subject.id;
