@@ -137,7 +137,7 @@ export const accessRequest = async (subject: Subject,
     if (!authZ.ids) {
       throw new FailedPrecondition('identity-srv client config not initialized', 500);
     }
-    const user = await authZ.ids.findByToken(token);
+    const user = await authZ.ids.findByToken({ token });
     if (!user) {
       throw new Unauthenticated('could not resolve token to user', 401);
     } else {
