@@ -8,6 +8,7 @@ import { errors, cfg } from './config';
 import * as nodeEval from 'node-eval';
 import logger from './logger';
 import { get } from './acs/cache';
+import { ACSAuthZ } from './acs/authz';
 
 export const reduceRoleAssociations = async (roleAssociations: RoleAssociation[],
   scopeID: string): Promise<UserScope> => {
@@ -274,32 +275,24 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
 };
 
 export const buildFilterPermissions = async (policySet: PolicySetRQ,
-  subject: any, reqResources: any, database?: string): Promise<QueryArguments | UserQueryArguments> => {
+  subject: any, reqResources: any, authZ: ACSAuthZ, database?: string): Promise<QueryArguments | UserQueryArguments> => {
   if (_.isEmpty(subject.role_associations) || _.isEmpty(subject.hierarchical_scopes)) {
-    // update subject from redis (restore target scope from subject as it is)
-    const targetScope = subject.scope;
-    let subjectID = subject.id;
     let token = subject.token;
-    const redisSubKey = `cache:${subjectID}:subject`;
-    let redisHRScopesKey = `cache:${subjectID}:hrScopes`;
-    let redisSub;
-    try {
-      redisSub = await get(redisSubKey);
-      if (redisSub && redisSub.tokens) {
-        for (let tokenInfo of redisSub.tokens) {
-          if ((tokenInfo.token) === token && tokenInfo.scopes && tokenInfo.scopes.length > 0) {
-            redisHRScopesKey = `cache:${subjectID}:${token}:hrScopes`;
-          }
-        }
+    let redisHRScopesKey;
+    const idsSubject = await authZ.ids.findByToken({ token });
+    if (idsSubject && idsSubject.data) {
+      let subjectTokens = idsSubject.data.tokens;
+      const tokenFound = _.find(subjectTokens, { token });
+      if (tokenFound && tokenFound.interactive) {
+        redisHRScopesKey = `cache:${idsSubject.data.id}:hrScopes`;
+      } else if (tokenFound && !tokenFound.interactive) {
+        redisHRScopesKey = `cache:${idsSubject.data.id}:${token}:hrScopes`;
       }
-    } catch (err) {
-      logger.error(err);
     }
-    if (redisSub) {
+
+    if (redisHRScopesKey) {
       const hierarchical_scopes = await get(redisHRScopesKey);
-      Object.assign(redisSub, { hierarchical_scopes });
-      subject = redisSub;
-      subject.scope = targetScope;
+      Object.assign(subject, { hierarchical_scopes });
     }
   }
   const urns = cfg.get('authorization:urns');
