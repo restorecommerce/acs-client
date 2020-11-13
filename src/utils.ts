@@ -119,39 +119,43 @@ const checkSubjectMatch = (user: SubjectResolved, ruleSubjectAttributes: Attribu
   let userAssocHRScope: HierarchicalScope;
   if (roleScopeEntExists && roleValueExists) {
     const userRoleAssocs = user.role_associations;
-    for (let role of userRoleAssocs) {
-      if (role.role === ruleRoleValue) {
-        // check the targetScope exists in the user HR scope object
-        let roleScopeEntityNameMatched = false;
-        for (let roleAttrs of role.attributes) {
-          // urn:restorecommerce:acs:names:roleScopingInstance
-          if (roleAttrs.id === urns.roleScopingEntity &&
-            roleAttrs.value === ruleRoleScopeEntityName) {
-            roleScopeEntityNameMatched = true;
-          } else if (roleScopeEntityNameMatched && roleAttrs.id === urns.roleScopingInstance) {
-            userAssocScope = roleAttrs.value;
-            break;
+    if (!_.isEmpty(userRoleAssocs)) {
+      for (let role of userRoleAssocs) {
+        if (role.role === ruleRoleValue) {
+          // check the targetScope exists in the user HR scope object
+          let roleScopeEntityNameMatched = false;
+          for (let roleAttrs of role.attributes) {
+            // urn:restorecommerce:acs:names:roleScopingInstance
+            if (roleAttrs.id === urns.roleScopingEntity &&
+              roleAttrs.value === ruleRoleScopeEntityName) {
+              roleScopeEntityNameMatched = true;
+            } else if (roleScopeEntityNameMatched && roleAttrs.id === urns.roleScopingInstance) {
+              userAssocScope = roleAttrs.value;
+              break;
+            }
           }
-        }
-        // check if this userAssocScope's HR object contains the targetScope
-        for (let hrScope of user.hierarchical_scopes) {
-          if (hrScope.id === userAssocScope) {
-            userAssocHRScope = hrScope;
-            break;
+          // check if this userAssocScope's HR object contains the targetScope
+          for (let hrScope of user.hierarchical_scopes) {
+            if (hrScope.id === userAssocScope) {
+              userAssocHRScope = hrScope;
+              break;
+            }
           }
-        }
-        // check HR scope matching for subject if hierarchicalRoleScopingCheck is 'true'
-        if (userAssocHRScope && checkTargetScopeExists(userAssocHRScope,
-          user.scope, reducedUserScope, hierarchicalRoleScopingCheck)) {
-          return true;
+          // check HR scope matching for subject if hierarchicalRoleScopingCheck is 'true'
+          if (userAssocHRScope && checkTargetScopeExists(userAssocHRScope,
+            user.scope, reducedUserScope, hierarchicalRoleScopingCheck)) {
+            return true;
+          }
         }
       }
     }
   } else if (!roleScopeEntExists && roleValueExists) {
     const userRoleAssocs = user.role_associations;
-    for (let role of userRoleAssocs) {
-      if (role.role === ruleRoleValue) {
-        return true;
+    if (!_.isEmpty(userRoleAssocs)) {
+      for (let role of userRoleAssocs) {
+        if (role.role === ruleRoleValue) {
+          return true;
+        }
       }
     }
   }
@@ -290,9 +294,10 @@ export const buildFilterPermissions = async (policySet: PolicySetRQ,
       }
     }
 
+    const role_associations = idsSubject.data.role_associations;
     if (redisHRScopesKey) {
       const hierarchical_scopes = await get(redisHRScopesKey);
-      Object.assign(subject, { hierarchical_scopes });
+      Object.assign(subject, { hierarchical_scopes, role_associations });
     }
   }
   const urns = cfg.get('authorization:urns');
