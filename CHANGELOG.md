@@ -1,3 +1,8 @@
+### 0.2.18 (November 19th, 2020)
+
+- changest to pass only token and remove subject ID from Subject
+- fix to resolve subject ID from token using findByToken of identity-srv
+
 ### 0.2.17 (October 29th, 2020)
 
 - fix for unauthenticated user property check
