@@ -9,7 +9,7 @@ import { errors, cfg } from '../config';
 import { buildFilterPermissions } from '../utils';
 import { Client, toStruct } from '@restorecommerce/grpc-client';
 import { UnAuthZ, ACSAuthZ } from './authz';
-import { Unauthenticated, PermissionDenied, FailedPrecondition } from './errors';
+import { Unauthenticated, PermissionDenied } from './errors';
 import { toObject } from './../utils';
 
 
@@ -125,7 +125,7 @@ export const accessRequest = async (subject: Subject,
     return Decision.PERMIT;
   }
 
-  if (_.isEmpty(subject) || !(subject as Subject).token && !((subject as Subject).unauthenticated)) {
+  if (_.isEmpty(subject)) {
     throw new Unauthenticated(errors.USER_NOT_LOGGED_IN.message, errors.USER_NOT_LOGGED_IN.code);
   }
 
@@ -133,18 +133,7 @@ export const accessRequest = async (subject: Subject,
   let subjectID;
   let targetScope = subject.scope;
   // resolve userID by token
-  if (!subject.unauthenticated) {
-    if (!authZ.ids) {
-      throw new FailedPrecondition('identity-srv client config not initialized', 500);
-    }
-    const user = await authZ.ids.findByToken({ token });
-    if (!user) {
-      throw new Unauthenticated('could not resolve token to user', 401);
-    } else if(user && user.data) {
-      subClone.id = user.data.id;
-      subjectID = user.data.id;
-    }
-  } else {
+  if (subject && subject.id) {
     subjectID = subject.id;
   }
   // for read operations

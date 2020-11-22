@@ -1,3 +1,8 @@
+### 0.2.19 (November 22nd, 2020)
+
+- removed the subjectID resolver from findByToken api
+- readded HR scopes and role associations to Subject as optional fields
+
 ### 0.2.18 (November 19th, 2020)
 
 - changest to pass only token and remove subject ID from Subject

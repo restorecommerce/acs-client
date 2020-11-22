@@ -1,6 +1,6 @@
 import {
-  RoleAssociation, UserScope, Subject, SubjectResolved,
-  PolicySetRQ, Effect, AttributeTarget, Attribute, HierarchicalScope
+  RoleAssociation, UserScope, Subject, PolicySetRQ, Effect,
+  AttributeTarget, Attribute, HierarchicalScope
 } from './acs/interfaces';
 import * as _ from 'lodash';
 import { QueryArguments, UserQueryArguments } from './acs/resolver';
@@ -86,7 +86,7 @@ const checkTargetScopeExists = (hrScope: HierarchicalScope, targetScope: string,
   return false;
 };
 
-const checkSubjectMatch = (user: SubjectResolved, ruleSubjectAttributes: Attribute[],
+const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
   reducedUserScope?: string[]): boolean => {
   // 1) Iterate through ruleSubjectAttributes and check if the roleScopingEntity URN and
   // role URN exists
@@ -279,27 +279,32 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
 };
 
 export const buildFilterPermissions = async (policySet: PolicySetRQ,
-  subject: any, reqResources: any, authZ: ACSAuthZ, database?: string): Promise<QueryArguments | UserQueryArguments> => {
-  if (_.isEmpty(subject.role_associations) || _.isEmpty(subject.hierarchical_scopes)) {
+  subject: Subject, reqResources: any, authZ: ACSAuthZ, database?: string): Promise<QueryArguments | UserQueryArguments> => {
+  let hierarchical_scopes = subject && subject.hierarchical_scopes ? subject.hierarchical_scopes : [];
+  let role_associations = subject && subject.role_associations ? subject.role_associations : [];
+  if (_.isEmpty(role_associations) || _.isEmpty(hierarchical_scopes)) {
     let token = subject.token;
     let redisHRScopesKey;
-    const idsSubject = await authZ.ids.findByToken({ token });
-    if (idsSubject && idsSubject.data) {
-      let subjectTokens = idsSubject.data.tokens;
-      const tokenFound = _.find(subjectTokens, { token });
-      if (tokenFound && tokenFound.interactive) {
-        redisHRScopesKey = `cache:${idsSubject.data.id}:hrScopes`;
-      } else if (tokenFound && !tokenFound.interactive) {
-        redisHRScopesKey = `cache:${idsSubject.data.id}:${token}:hrScopes`;
+    if (subject && subject.id) {
+      redisHRScopesKey = `cache:${subject.id}:${token}:hrScopes`;
+      hierarchical_scopes = await get(redisHRScopesKey);
+      if (_.isEmpty(hierarchical_scopes)) {
+        redisHRScopesKey = `cache:${subject.id}:hrScopes`;
+        hierarchical_scopes = await get(redisHRScopesKey);
+      }
+      if (!hierarchical_scopes) {
+        hierarchical_scopes = [];
+      }
+      let redisSubject = await get(`cache:${subject.id}:subject`);
+      if (redisSubject && redisSubject.role_associations) {
+        role_associations = redisSubject.role_associations;
+      }
+      if (!role_associations) {
+        role_associations = [];
       }
     }
-
-    const role_associations = idsSubject.data.role_associations;
-    if (redisHRScopesKey) {
-      const hierarchical_scopes = await get(redisHRScopesKey);
-      Object.assign(subject, { hierarchical_scopes, role_associations });
-    }
   }
+  Object.assign(subject, { hierarchical_scopes, role_associations });
   const urns = cfg.get('authorization:urns');
   let query = {
     filter: []

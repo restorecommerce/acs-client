@@ -25,13 +25,6 @@ export interface Subject {
   scope?: string; // target scope
   unauthenticated?: boolean;
   token?: string;
-}
-
-export interface SubjectResolved {
-  id?: string;
-  scope?: string; // target scope
-  unauthenticated?: boolean;
-  token?: string;
   role_associations?: RoleAssociation[];
   hierarchical_scopes?: HierarchicalScope[]; // HR scope for user
 }

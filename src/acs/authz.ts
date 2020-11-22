@@ -219,7 +219,6 @@ export class ACSAuthZ implements IAuthZ {
    */
   constructor(acs: any, ids?: any) {
     this.acs = acs;
-    this.ids = ids;
   }
 
   /**
@@ -402,14 +401,7 @@ export const initAuthZ = async (config?: any): Promise<void | ACSAuthZ> => {
       const grpcACSConfig = grpcClientConfig['acs-srv'];
       const acsClient = new Client(grpcACSConfig, logger);
       const acs = await acsClient.connect();
-      // identity-srv client to resolve user by token
-      let ids;
-      const grpcIDSConfig = grpcClientConfig['user'];
-      if (grpcIDSConfig) {
-        const idsClient = new Client(grpcIDSConfig, logger);
-        ids = await idsClient.connect();
-      }
-      authZ = new ACSAuthZ(acs, ids);
+      authZ = new ACSAuthZ(acs);
       // listeners for rules / policies / policySets modified, so as to
       // delete the Cache as it would be invalid if ACS resources are modified
       if (kafkaCfg && kafkaCfg.evictACSCache) {
