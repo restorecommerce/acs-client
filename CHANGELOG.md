@@ -1,3 +1,7 @@
+### 0.2.20 (December 1st, 2020)
+
+- fix to use prebuilt filter returned from validating condition
+
 ### 0.2.19 (November 22nd, 2020)
 
 - removed the subjectID resolver from findByToken api

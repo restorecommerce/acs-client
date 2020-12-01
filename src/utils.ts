@@ -188,14 +188,19 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
     try {
       filterId = validateCondition(condition, request);
       // special filter added to filter user read for his own entity
-      if (filterId && !scopingUpdated) {
-        userCondition = true;
-        filter.push({
-          id: {
-            $eq: filterId
-          }
-        });
-      } else {
+      if (typeof filterId === 'string') {
+        if (filterId && !scopingUpdated) {
+          userCondition = true;
+          filter.push({
+            id: {
+              $eq: filterId
+            }
+          });
+        }
+      } else if (typeof filterId === 'object') { // prebuilt filter
+        filter.push(filterId);
+      }
+      else {
         return;
       }
     } catch (err) {
