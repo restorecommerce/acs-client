@@ -1,3 +1,7 @@
+### 0.2.23 (December 4th, 2020)
+
+- fix for validating boolean condition
+
 ### 0.2.22 (December 4th, 2020)
 
 - fix for anauthenticated sub

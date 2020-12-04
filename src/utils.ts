@@ -203,7 +203,14 @@ const buildQueryFromTarget = (target: AttributeTarget, effect: Effect,
       } else if (typeof filterId === 'object') { // prebuilt filter
         filter.push(filterId);
       }
-      else {
+      else if (filterId && !scopingUpdated) {
+        userCondition = true;
+        filter.push({
+          id: {
+            $eq: filterId
+          }
+        });
+      } else {
         return;
       }
     } catch (err) {
