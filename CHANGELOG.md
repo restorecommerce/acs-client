@@ -1,3 +1,7 @@
+### 0.2.21 (December 4th, 2020)
+
+- fix to set unauthenticated to true on subject, when subject is null
+
 ### 0.2.20 (December 1st, 2020)
 
 - fix to use prebuilt filter returned from validating condition
