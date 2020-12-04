@@ -99,7 +99,7 @@ export const accessRequest = async (subject: Subject,
   request: any | any[] | ReadRequest, action: AuthZAction, authZ: ACSAuthZ, entity?: string,
   resourceNameSpace?: string, useCache = true): Promise<Decision | PolicySetRQ> => {
   // when subject is not passed (if auth header is not set)
-  if (!subject) {
+  if (_.isEmpty(subject)) {
     subject = { unauthenticated: true };
   }
   let subClone = _.cloneDeep(subject);

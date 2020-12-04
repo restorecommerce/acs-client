@@ -1,3 +1,7 @@
+### 0.2.22 (December 4th, 2020)
+
+- fix for anauthenticated sub
+
 ### 0.2.21 (December 4th, 2020)
 
 - fix to set unauthenticated to true on subject, when subject is null

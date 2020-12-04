@@ -104,6 +104,9 @@ const checkSubjectMatch = (user: Subject, ruleSubjectAttributes: Attribute[],
     return true;
   }
   for (let attribute of ruleSubjectAttributes) {
+    if (attribute.id === 'urn:restorecommerce:acs:names:unauthenticated-user' && attribute.value === 'true') {
+      return true;
+    }
     if (attribute.id === urns.roleScopingEntity) {
       roleScopeEntExists = true;
       ruleRoleScopeEntityName = attribute.value;
