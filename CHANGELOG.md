@@ -1,3 +1,7 @@
+### 0.2.24 (March 23rd, 2021)
+
+- up grpc-client and other dependencies
+
 ### 0.2.23 (December 4th, 2020)
 
 - fix for validating boolean condition

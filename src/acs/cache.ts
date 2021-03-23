@@ -143,7 +143,7 @@ export const get = async (key: string): Promise<any> => {
       }
       if (!err && !reply) {
         logger.info('Key does not exist', { key });
-        resolve();
+        resolve(0);
       }
     });
   });
@@ -203,7 +203,7 @@ export const flushCache = async (prefix?: string) => {
 
       if (reply) {
         logger.debug('Flushed ACS cache');
-        return resolve();
+        return resolve(0);
       }
     });
   });
