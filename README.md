@@ -95,11 +95,6 @@ Requests are performed providing [`io.restorecommerce.access_control.Request`](h
 
 This API exposes the [`whatIsAllowed`](https://github.com/restorecommerce/access-control-srv#whatisallowed) api of `access-control-srv` and retruns policy sets list containing list of applicable policies and rules. Requests are performed providing [`io.restorecommerce.access_control.Request`](https://github.com/restorecommerce/access-control-srv#whatisallowed) message as input and response is [`io.restorecommerce.access_control.ReverseQuery`](https://github.com/restorecommerce/access-control-srv#whatisallowed) message.
 
-### `flushCache`
-
-This API flushes the ACS cache from redis. An optional prefix key can be provided to flush instead of entire cache.
-
-
 ## Caching
 
 This client supports caching for `isAllowed` and `whatIsAllowed` access request operations if [`authorization:cache`](cfg/config.json#L121) options are set. The time to live for redis key can be set using [`authorization:cache:ttl`](cfg/config.json#L125) configuration. The hash key for caching the request is generated using [`MD5`](https://en.wikipedia.org/wiki/MD5) hash algorithm. 
